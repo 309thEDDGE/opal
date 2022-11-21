@@ -1,0 +1,12 @@
+name: OnPullRequest
+
+on: 
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  call-pylint:
+    uses: ./.github/workflows/pylint.yml
+  call-sast:
+    uses: ./.github/workflows/sast.yml

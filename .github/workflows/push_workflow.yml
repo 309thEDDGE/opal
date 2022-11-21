@@ -1,0 +1,10 @@
+name: OnPush
+
+on: 
+  push:
+    branches-ignore:
+      - main
+
+jobs:
+  call-pylint:
+    uses: ./.github/workflows/pylint.yml
