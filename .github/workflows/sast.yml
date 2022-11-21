@@ -1,9 +1,0 @@
-name: SAST
-
-on: [workflow_call]
-
-jobs:
-  call-trufflehog:
-    uses: ./.github/workflows/trufflehog.yml
-  # call-fortify:
-  #   uses: ./.github/workflows/fortify.yml
