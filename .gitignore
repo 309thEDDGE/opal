@@ -1,0 +1,10 @@
+*.egg-info/
+.eggs/
+.pytest_cache/
+__pycache__/
+opal-packages/*/build
+!opalbanner/
+!opalbanner/**
+!opalbanner/opalbanner/labextension/*
+**/.ipynb_checkpoints
+scripts.py

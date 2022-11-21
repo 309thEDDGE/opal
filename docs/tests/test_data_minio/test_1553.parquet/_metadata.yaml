@@ -1,0 +1,33 @@
+---
+ch10_packet_type:
+  ETHERNET_DATA0: true
+  MILSTD1553_FORMAT1: true
+  VIDEO_FORMAT0: true
+
+parse_chunk_bytes: 200
+
+parse_thread_count: 2
+
+max_chunk_read_count: 1000
+
+worker_offset_wait_ms: 200
+
+worker_shift_wait_ms: 200
+
+ch10_input_file_path: /mnt/tests/test_data/test.ch10
+
+chanid_to_lru_addrs:
+  30: [6]
+
+chanid_to_comm_words:
+  30:
+    - [14240, 0]
+
+tmats_chanid_to_source:
+  1: TimeInChan1
+  30: 1553InChan30
+
+tmats_chanid_to_type:
+  1: TIMIN
+  30: 1553IN
+...

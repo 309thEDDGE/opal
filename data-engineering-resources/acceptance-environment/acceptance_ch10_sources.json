@@ -1,0 +1,10 @@
+{
+    "public-nasa": {
+        "fsspec": {
+            "protocol":"s3",
+            "anon":true,
+            "client_kwargs":{"region_name":"us-gov-west-1"}
+        },
+        "urls":["s3://opal-data/nasa-ch10/**.ch10"]
+    }
+}
