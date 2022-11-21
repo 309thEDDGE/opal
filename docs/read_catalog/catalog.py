@@ -29,5 +29,7 @@ class HackedRemote(RemoteCatalog):
 
 
 def open_catalog(uri=None, auth=JupyterHubClientAuth()):
-    cat = HackedRemote(uri, auth=auth, persist_mode="never", ttl=1000000000000, page_size=50)
+    cat = HackedRemote(
+        uri, auth=auth, persist_mode="never", ttl=1000000000000, page_size=50
+    )
     return cat

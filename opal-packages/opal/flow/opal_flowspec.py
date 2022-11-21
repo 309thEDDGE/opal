@@ -9,7 +9,7 @@ import os
 class OpalFlowSpec(FlowSpec):
 
     # uploads a file or folder, and puts the s3 path of the
-    # uploaded object into `self.data_files` 
+    # uploaded object into `self.data_files`
     def upload(self, path, key=None):
         if not hasattr(self, "data_files"):
             self.data_files = {}
@@ -28,7 +28,7 @@ class OpalFlowSpec(FlowSpec):
             if self.s3root.startswith("s3://"):
                 cut_out = len("s3://")
                 self.s3root = self.s3root[cut_out:]
-            
+
             # get file or directory upload structure for metaflow's S3 thing
             if os.path.isdir(path):
                 upload = get_metaflow_s3_folder_upload_structure(path, key)

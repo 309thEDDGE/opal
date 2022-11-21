@@ -1,8 +1,15 @@
 import datetime
 import adsb.validate as validate
 
-field_data = {'icao': '', 'r': '', 't': '', 'desc': '', 
-    'dbFlags': 'bitfield', 'timestamp': 'epoch'}
+field_data = {
+    "icao": "",
+    "r": "",
+    "t": "",
+    "desc": "",
+    "dbFlags": "bitfield",
+    "timestamp": "epoch",
+}
+
 
 def _has_valid_fields(data: dict) -> bool:
     keys = list(data.keys())
@@ -11,16 +18,15 @@ def _has_valid_fields(data: dict) -> bool:
             return False
     return True
 
+
 def get_metadata(data: dict) -> dict:
     result = {}
     if not _has_valid_fields(data):
-        return result 
+        return result
 
     for field in field_data.keys():
         result[field] = data[field]
 
-    ts = validate._convert_timestamp(result['timestamp'])
-    result['timestamp'] = ts
+    ts = validate._convert_timestamp(result["timestamp"])
+    result["timestamp"] = ts
     return result
-
-

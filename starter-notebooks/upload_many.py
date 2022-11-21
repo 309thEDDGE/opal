@@ -16,14 +16,15 @@ def get_parsed_translated(shallow_cat_path):
     translated = os.path.join(shallow_cat_path, translated_fname)
     return parsed, translated
 
+
 def upload_a_dataset(dataset_path, user_meta, inplace=False):
     p, t = get_parsed_translated(dataset_path)
-    
+
     # manually check if a dataset at this location was already uploaded
     kp_search = kp.metadata_search("source_path", p)
     kt_search = kt.metadata_search("source_path", t)
-    
-    if len(kp_search) == 0: # an instance uploaded from this location doesn't exist
+
+    if len(kp_search) == 0:  # an instance uploaded from this location doesn't exist
         print(f"Uploading {p} as parsed")
         kp_meta_out = kp.upload(p, user_meta, inplace=inplace)
         kp_id = kp_meta_out["instance_id"]
@@ -31,7 +32,7 @@ def upload_a_dataset(dataset_path, user_meta, inplace=False):
         print(f"Instance from {p} already exists")
         _, kp_id = kp_search[0]
     print(kp_id)
-    
+
     if len(kt_search) == 0:
         print(f"Uploading {t} as translated")
         kt_meta_out = kt.upload(t, user_meta, inplace=inplace, parent_instance=kp_id)
@@ -39,15 +40,14 @@ def upload_a_dataset(dataset_path, user_meta, inplace=False):
         print(f"Instance from {t} already exists")
         _, kt_id = kt_search[0]
     print(kt_id)
-        
+
     return kp_id, kt_id
-        
-def publish_instance(
-    kind_id: str, kind_type: str, s3_path: str = None
-):
+
+
+def publish_instance(kind_id: str, kind_type: str, s3_path: str = None):
     kind = kinds.lookup(kind_type)
     kind_metadata = kind.read_instance_metadata(kind_id)
-    
+
     # CATALOG_API_URL = os.environ.get("CATALOG_API_URL")
     back_end_url = "http://opalcatalog-be:9001/services/opal-catalog"
     CATALOG_API_URL = "http://opalcatalog-be:9001/services/opal-catalog"
@@ -70,15 +70,19 @@ def publish_instance(
         headers=dict(Authorization=f"token {JUPTYERHUB_API_TOKEN}"),
         # ),
     )
-    
+
+
 # DELETE BY KIND ID
 def delete_by_kind_id(kind_id, error_ok=False):
     back_end_url = "http://opalcatalog-be:9001/services/opal-catalog"
-    d = requests.delete(f"{back_end_url}/instance", headers={"Authorization": "token %s" % os.environ.get("JUPYTERHUB_API_TOKEN")}, data=json.dumps({
-       "kind_id": kind_id
-    }))
+    d = requests.delete(
+        f"{back_end_url}/instance",
+        headers={"Authorization": "token %s" % os.environ.get("JUPYTERHUB_API_TOKEN")},
+        data=json.dumps({"kind_id": kind_id}),
+    )
     assert d.status_code == 204 or error_ok
-    
+
+
 if __name__ == "__main__":
     import os
     import sys
@@ -92,12 +96,12 @@ if __name__ == "__main__":
     translated_fname = "test_1553_translated"
 
     for pth in datasets:
-        kp_id, kt_id = upload_a_dataset(pth, { "source_search": glob_str })
-        
+        kp_id, kt_id = upload_a_dataset(pth, {"source_search": glob_str})
+
         kp.strong_validate_instance(kp_id)
         kt.strong_validate_instance(kt_id)
-        
+
         publish_instance(kp_id, kp_label, "")
         publish_instance(kt_id, kt_label, "")
-        
+
     print("Done")

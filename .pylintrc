@@ -1,0 +1,4 @@
+[Main]
+# Ignore the ADSB directory, which is a work in progress. 
+ignore=hires_trace_metadata.py,test_validate.py,test_hires_trace_metadata.py,validate.py
+fail-under=5

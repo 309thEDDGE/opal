@@ -5,5 +5,5 @@ setup(
     version="0.1",
     packages=["opal.flow", "opal.publish", "opal.query"],
     install_requires=["metaflow", "numpy", "pandas", "s3fs", "requests"],
-    package_data={"opal.flow_utils": ["resources/flow_script_upload.py"]}
+    package_data={"opal.flow_utils": ["resources/flow_script_upload.py"]},
 )

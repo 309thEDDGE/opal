@@ -5,6 +5,7 @@ import json
 import numpy as np
 import pandas as pd
 
+
 @patch("requests.post")
 def test_publish_called_successfully(mock_post):
     mock_post.return_value = MagicMock(status_code=201)
@@ -19,12 +20,17 @@ def test_publish_called_successfully(mock_post):
 
     mock_post.assert_called_once_with(
         "http://test-be/instance",
-        data=json.dumps(dict(
-            kind_metadata={"foo": "bar"},
-            kind_type="testtype",
-            kind_id="testid",
-        )),
-        headers={"content-type": "application/json", "Authorization": "token atesttoken"},
+        data=json.dumps(
+            dict(
+                kind_metadata={"foo": "bar"},
+                kind_type="testtype",
+                kind_id="testid",
+            )
+        ),
+        headers={
+            "content-type": "application/json",
+            "Authorization": "token atesttoken",
+        },
     )
 
     assert success == True
@@ -45,12 +51,17 @@ def test_publish_called_unsuccessfully(mock_post):
 
     mock_post.assert_called_once_with(
         "http://test-be/instance",
-        data=json.dumps(dict(
-            kind_metadata={"foo": "bar"},
-            kind_type="testtype",
-            kind_id="testid",
-        )),
-        headers={"content-type": "application/json", "Authorization": "token atesttoken"},
+        data=json.dumps(
+            dict(
+                kind_metadata={"foo": "bar"},
+                kind_type="testtype",
+                kind_id="testid",
+            )
+        ),
+        headers={
+            "content-type": "application/json",
+            "Authorization": "token atesttoken",
+        },
     )
 
     assert success == False
@@ -58,16 +69,14 @@ def test_publish_called_unsuccessfully(mock_post):
 
 
 def test_publish_serializer_numpy():
-    arr = np.array([
-        [1, 2, 3],
-        [4, 5, 6]
-    ])
+    arr = np.array([[1, 2, 3], [4, 5, 6]])
     expected = [[1, 2, 3], [4, 5, 6]]
     assert publish_serializer(arr) == expected
     json.dumps(publish_serializer(arr))
 
+
 def test_publish_serializer_pandas():
-    df = pd.DataFrame({"num":[1, 2, 3], "alph":["x", "y", None]})
+    df = pd.DataFrame({"num": [1, 2, 3], "alph": ["x", "y", None]})
     # expected = {'alph': {0: 'x', 1: 'y', 2: 'z'}, 'num': {0: 1, 1: 2, 2: 3}}
     # assert publish_serializer(df) == expected
     # really this is all we need to test
