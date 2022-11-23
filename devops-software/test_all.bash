@@ -98,7 +98,7 @@ if [[ ${TEST_ENV} == "acceptance" ]] ; then
 fi
 
 if [[ $? -ne 0 ]]; then
-    echo "A notebook failed!"
+    echo "One or more Notebook Failed!"
     exit 1
 else
     echo "Notebooks Passed"
