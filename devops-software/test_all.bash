@@ -1,13 +1,37 @@
 #!/bin/bash
 
+export TEST="$(readlink -e $0)"
 TEST_ENV="${TEST_ENV:-}"
-DEFAULT_OPAL_ROOT=$(dirname $0)/..
+
+#these are hard coded and subject to breaking if we
+#change jupyter setup
+SINGLEUSER_BIN=/opt/conda/envs/singleuser/bin/python3
+SINGLEUSER_ENV=conda-env-singleuser-py
+TORCH_BIN=/opt/conda/envs/torch/bin/python3
+TORCH_ENV=conda-env-torch-py
+
+
+DEFAULT_OPAL_ROOT="$(readlink -e "$(dirname $0)/..")"
 OPAL_ROOT=${OPAL_ROOT:-${DEFAULT_OPAL_ROOT}}
 
-ARGS=$(getopt -o "ahe:o:" \
-    --long acceptance,environment:,help,opal-root: \
+#flags
+VERBOSE=""
+EXCLUDE_SINGLEUSER=""
+EXCLUDE_TORCH=""
+EXCLUDE_PYTEST=""
+EXCLUDE_TIP=""
+EXCLUDE_STARTER_NOTEBOOKS=""
+EXCLUDE_TEST_NOTEBOOKS=""
+EXCLUDE_DEMO_NOTEBOOKS="EXCLUDE_DEMO_NOTEBOOKS"
+
+ARGS=$(getopt -o "ahe:o:v" \
+    --long "acceptance,environment:,help,opal-root:,verbose,no-singleuser," \
+    --long "no-torch,no-tip,no-pytest,no-starter-notebooks,no-test-notebooks," \
+    --long "no-demo-notebooks,no-notebooks" \
     -n test_all \
     -- "$@" )
+(( $? == 0 )) || exit 1 ;
+
 
 show_help() {
     cat << EOF
@@ -15,6 +39,15 @@ usage:
     $0 [-a|--acceptance]
        [-o|--opal-root OPAL_ROOT]
        [-e|--environment TEST_ENVIRONMENT_NAME]
+       [--no-singleuser]
+       [--no-torch]
+       [--no-tip]
+       [--no-pytest]
+       [--no-starter-notebooks]
+       [--no-test-notebooks]
+       [--no-demo-notebooks]
+       [--no-notebooks]
+       [-v|--verbose]
        [-h|--help]
 
     Run all automated tests for the OPAL framework.  Optional tests can be
@@ -22,20 +55,29 @@ usage:
     The only currently supported test environment is "acceptance".
 
     -e|--environment   set testing enviroment to TEST_ENVIRONMENT_NAME
-    -a|--acceptance    set testing environment to acceptance. This is equivalent
-                       to passing "-e acceptance".
+    -a|--acceptance    set testing environment to acceptance. This is 
+                       equivalent to passing "-e acceptance".
     -o|--opal-root     set directory where opal project is installed
+    -v|--verbose       print backtrace for failing notebooks
+    --no-singleuser    no tests run for singleuser conda environment
+    --no-torch         no tests run for torch conda environment
+    --no-tip           no tests run for TIP
+    --no-pytest        no pytest tests are run
+    --no-starter-notebooks        do not run starter notebooks
+    --no-test-notebooks           do not run test notebooks
+    --no-demo-notebooks           do not run demo notebooks
+    --no-notebooks     don't run any notebooks
     -h|--help          show this help
 
-    TEST_ENVIRONMENT_NAME will default to the environment variable TEST_ENV if
-    it is set.  The command line options will be used first, if specified.
+    TEST_ENVIRONMENT_NAME will default to the environment variable TEST_ENV
+    if it is set.  The command line options will be used first, if specified.
     If multiple values on the command line are specified, the last will be
     used.
 
-    OPAL_ROOT will default to one directory up from the present working directory.
+    OPAL_ROOT will default to one directory up from the present working
+    directory.
 EOF
 }
-
 
 eval set -- "${ARGS}"
 while true ; do
@@ -52,12 +94,62 @@ case "$1" in
 
     -e | --environment )
         TEST_ENV=$2
+        if [[ "${TEST_ENV}" == "acceptance" ]] ; then
+            EXCLUDE_DEMO_NOTEBOOKS=""
+        fi
         shift 2
         ;;
 
-
     -a | --acceptance )
         TEST_ENV=acceptance
+        EXCLUDE_DEMO_NOTEBOOKS=""
+        shift
+        ;;
+
+    -v|--verbose)
+        VERBOSE="VERBOSE"
+        shift
+        ;;
+
+    --no-singleuser)
+        EXCLUDE_SINGLEUSER="EXCLUDE_SINGLEUSER"
+        shift
+        ;;
+
+    --no-torch)
+        EXCLUDE_TORCH="EXCLUDE_TORCH"
+        shift
+        ;;
+
+    --no-tip)
+        EXCLUDE_TIP="EXCLUDE_TIP"
+        shift
+        ;;
+
+    --no-pytest)
+        EXCLUDE_PYTEST="EXCLUDE_PYTEST"
+        shift
+        ;;
+
+    --no-starter-notebooks)
+        EXCLUDE_STARTER_NOTEBOOKS="EXCLUDE_STARTER_NOTEBOOKS"
+        shift
+        ;;
+
+    --no-test-notebooks)
+        EXCLUDE_TEST_NOTEBOOKS="EXCLUDE_TEST_NOTEBOOKS"
+        shift
+        ;;
+
+    --no-demo-notebooks)
+        EXCLUDE_DEMO_NOTEBOOKS="EXCLUDE_DEMO_NOTEBOOKS"
+        shift
+        ;;
+
+    --no-notebooks)
+        EXCLUDE_STARTER_NOTEBOOKS="EXCLUDE_STARTER_NOTEBOOKS"
+        EXCLUDE_TEST_NOTEBOOKS="EXCLUDE_TEST_NOTEBOOKS"
+        EXCLUDE_DEMO_NOTEBOOKS="EXCLUDE_DEMO_NOTEBOOKS"
         shift
         ;;
 
@@ -65,48 +157,275 @@ case "$1" in
         shift
         break
         ;;
+
+    * )
+        echo "unexpected argument $1"
+        exit 1
+        ;;
 esac
 done
 
-TEST_ENV=${TEST_ENV,,}
 
-echo "-----------------------------------------"
-echo "-------------- tip tests ----------------"
-echo "-----------------------------------------"
-tests
+FAILURES=0
+fail() {
+    FAILURES=$(( ${FAILURES} + 1 ))
+    [[ ! -z "$1" ]] && echo "FAILURE: $@"
+}
 
-echo "-----------------------------------------"
-echo "---------------- pytest -----------------"
-echo "-----------------------------------------"
+fix_prerequisites() {
+    #here is the minimum criterion for a working opal
+    read -r -d '' opal_verification<<'EOF'
+import opal
+import opal.flow
+import opal.publish
+import opal.query
+EOF
 
-pytest $OPAL_ROOT/opal-packages
+    # make sure opal is installed in each environment
+    echo "checking for OPAL python package"
+    if [[ -z "${EXCLUDE_SINGLEUSER}" ]] ; then
+        if ! ${SINGLEUSER_BIN} -c "${opal_verification}" &> /dev/null ; then
+            echo "OPAL packages not found in singleuser environment"
+            ${SINGLEUSER_BIN} -m pip install ${OPAL_ROOT}/opal-packages
+            if (( $? != 0 )) ; then
+                echo "failed to install opal packages"
+                exit 1
+            fi
+        fi
+    fi
 
-echo "-----------------------------------------"
-echo "------------- test notebooks ------------"
-echo "-----------------------------------------"
+    if [[ -z "${EXCLUDE_TORCH}" ]] ; then
+        if ! ${TORCH_BIN} -c "${opal_verification}" &> /dev/null ; then
+            echo "OPAL packages not found in torch environment"
+            ${TORCH_BIN} -m pip install ${OPAL_ROOT}/opal-packages
+            if (( $? != 0 )) ; then
+                echo "failed to install opal packages"
+                exit 1
+            fi
+        fi
+    fi
 
-# this generates a lot of extra output
-jupyter nbconvert --execute $OPAL_ROOT/test-notebooks/*.ipynb \
---to notebook --inplace
+    # make sure the kernels are accessible
+    # this will overwrite ~/local/share/jupyter/kernels/{singleuser,torch}/
+    echo
+    echo "Setting up conda kernels for automated testing."
+    if [[ -z "${EXCLUDE_SINGLEUSER}" ]] ; then
+        ${SINGLEUSER_BIN} -m ipykernel install --name ${SINGLEUSER_ENV} --user
+    fi
 
-if [[ ${TEST_ENV} == "acceptance" ]] ; then
-    echo "-----------------------------------------"
-    echo "----------- test demo notebooks ---------"
-    echo "-----------------------------------------"
-    TEST_ENV=$TEST_ENV jupyter nbconvert --execute \
-    $OPAL_ROOT/demo-notebooks/*.ipynb --to notebook --inplace
-fi
+    if [[ -z "${EXCLUDE_TORCH}" ]] ; then
+        ${TORCH_BIN} -m ipykernel install --name ${TORCH_ENV} --user
+    fi
+}
 
-if [[ $? -ne 0 ]]; then
-    echo "One or more Notebook Failed!"
-    exit 1
-else
-    echo "Notebooks Passed"
-fi
+tip_tests() {
+    echo
+    echo "TIP tests"
+    tests || fail "TIP tests failed."
+}
 
-echo "-----------------------------------------"
-echo "-------- default environment test -------"
-echo "-----------------------------------------"
+pytest_tests() {
+    if [[ -z "${EXCLUDE_SINGLEUSER}" ]] ; then
+        echo
+        echo "pytest tests (singleuser)"
+        ${SINGLEUSER_BIN} -m pytest -vv ${OPAL_ROOT}/opal-packages \
+            || fail "pytest (singleuser)"
+    fi
 
-[ $CONDA_DEFAULT_ENV == singleuser ] || \
-(echo "Default env \"$CONDA_DEFAULT_ENV\" is not singleuser"; exit 1)
+    if [[ -z "${EXCLUDE_TORCH}" ]] ; then
+        echo
+        echo "pytest tests (torch)"
+        ${TORCH_BIN} -m pytest -vv ${OPAL_ROOT}/opal-packages \
+            || fail "pytest (singleuser)"
+    fi
+}
+
+notebook_tests() {
+    local name="notebook_tests"
+    local conda_env="${SINGLEUSER_ENV}"
+    local args=$(getopt -o "c:n:" \
+        --long conda_environment:,name: \
+        -n notebook_tests \
+        -- "$@" )
+    eval set -- "$args"
+    while true ; do
+        case "$1" in
+        -c|--conda_environment)
+            conda_env="$2"
+            shift 2
+            ;;
+        -n|--name)
+            name="$2"
+            shift 2
+            ;;
+        --)
+            shift
+            break
+            ;;
+        esac
+    done
+
+    local count="${#@}"
+    if (( count == 0 )) ; then
+        echo "no notebooks specified"
+        return
+    fi
+
+    local notebooks=($@)
+    local failures=0
+    local output_dir=$(mktemp -d "${TMPDIR:-/tmp/}/notebook_tests.XXXXXXX")
+    for i in ${!notebooks[@]} ; do
+        local f=${notebooks[$i]}
+        local nb=$(basename $f)
+        local out="${output_dir}/${nb}.out"
+
+        stdbuf -o0 echo -n "[$((i + 1))/${count}] ${nb} ... "
+        TEST="${TEST}" TEST_ENV="${TEST_ENV}" \
+        jupyter nbconvert --execute "$f" \
+            --to notebook \
+            --ExecutePreprocessor.kernel_name="${conda_env}" \
+            --inplace &> ${out}
+        if (( $? == 0 )) ; then
+            echo "SUCCESS"
+        else
+            echo "FAILURE"
+            if [[ ! -z "${VERBOSE}" ]] ; then
+                echo
+                echo "${f}"
+                cat ${out}
+                echo
+            fi
+
+            failures=$(( ${failures} + 1 ))
+        fi
+    done
+
+    if (( ${failures} != 0 )) ; then
+        fail "some notebooks in ${name} test failed"
+    fi
+}
+
+#starter notebooks should be run in all environments always
+starter_notebook_tests() {
+    nb_root=${1:-${OPAL_ROOT}/starter-notebooks}
+    local notebooks=( $(find "${nb_root}"  -name "*.ipynb" \
+        | grep -v "ipynb_checkpoints" ) )
+
+    if [[ -z "${EXCLUDE_SINGLEUSER}" ]] ; then
+        echo
+        echo "running starter notebooks (singleuser)"
+        notebook_tests --conda_environment ${SINGLEUSER_ENV} \
+            --name "starter_notebook_tests (singleuser)" \
+            ${notebooks[@]}
+    fi
+
+    if [[ -z "${EXCLUDE_TORCH}" ]] ; then
+        echo
+        echo "running starter notebooks (torch)"
+        notebook_tests --conda_environment ${TORCH_ENV} \
+            --name "starter_notebook_tests (torch)" \
+            ${notebooks[@]}
+    fi
+}
+
+#these might have tests that can only be run in one environment
+#those tests should have the environment (singleuser, torch) in
+#the name
+test_notebook_tests() {
+    nb_root=${1:-${OPAL_ROOT}/test-notebooks}
+    local common_notebooks=( $(find "${nb_root}"  -name "*.ipynb" \
+        | grep -v "ipynb_checkpoints" \
+        | grep -iv "singleuser" \
+        | grep -iv "torch" ) )
+    local singleuser_notebooks=( $(find "${nb_root}"  -name "*.ipynb" \
+        | grep -v "ipynb_checkpoints" \
+        | grep -i "singleuser" ) )
+    local torch_notebooks=( $(find "${nb_root}"  -name "*.ipynb" \
+        | grep -v "ipynb_checkpoints" \
+        | grep -i "torch" ) )
+
+    if [[ -z "${EXCLUDE_SINGLEUSER}" ]] ; then
+        echo
+        echo "running test notebooks (singleuser)"
+        singleuser_notebooks+=( "${common_notebooks[@]}" )
+        notebook_tests --conda_environment ${SINGLEUSER_ENV} \
+            --name "test_notebook_tests (singleuser)" \
+            "${singleuser_notebooks[@]}"
+    fi
+
+    if [[ -z "${EXCLUDE_TORCH}" ]] ; then
+        echo
+        echo "running test notebooks (torch)"
+        torch_notebooks+=( "${common_notebooks[@]}" )
+        notebook_tests --conda_environment ${TORCH_ENV} \
+            --name "test_notebook_tests (torch)" \
+            "${torch_notebooks[@]}"
+    fi
+}
+
+demo_notebook_tests() {
+    nb_root=${1:-${OPAL_ROOT}/demo-notebooks}
+    local common_notebooks=( $(find "${nb_root}"  -name "*.ipynb" \
+        | grep -v "ipynb_checkpoints" \
+        | grep -iv "singleuser" \
+        | grep -iv "torch" ) )
+    local singleuser_notebooks=( $(find "${nb_root}"  -name "*.ipynb" \
+        | grep -v "ipynb_checkpoints" \
+        | grep -i "singleuser" ) )
+    local torch_notebooks=( $(find "${nb_root}"  -name "*.ipynb" \
+        | grep -v "ipynb_checkpoints" \
+        | grep -i "torch" ) )
+
+    if [[ -z "${EXCLUDE_SINGLEUSER}" ]] ; then
+        echo
+        echo "running demo notebooks (singleuser)"
+        singleuser_notebooks+=( "${common_notebooks[@]}" )
+        notebook_tests --conda_environment ${SINGLEUSER_ENV} \
+            --name "demo_notebook_tests (singleuser)" \
+            "${singleuser_notebooks[@]}"
+    fi
+
+    if [[ -z "${EXCLUDE_TORCH}" ]] ; then
+        echo
+        echo "running demo notebooks (torch)"
+        torch_notebooks+=( "${common_notebooks[@]}" )
+        notebook_tests --conda_environment ${TORCH_ENV} \
+            --name "demo_notebook_tests (torch)" \
+            "${torch_notebooks[@]}"
+    fi
+}
+
+test_default_environment() {
+    local default_env
+
+    stdbuf -o0 echo -n "default environment test ... "
+    default_env=$(bash -l -c "echo \$CONDA_DEFAULT_ENV")
+    if [[ "${default_env}" == "singleuser" ]] ; then
+        echo "SUCCESS"
+    else
+        echo "FAILURE"
+        fail "Default env \"$CONDA_DEFAULT_ENV\" is not singleuser"
+    fi
+}
+
+main() {
+    fix_prerequisites
+    [[ -z "${EXCLUDE_TIP}" ]] && tip_tests
+    [[ -z "${EXCLUDE_PYTEST}" ]] && pytest_tests
+    [[ -z "${EXCLUDE_STARTER_NOTEBOOKS}" ]] && \
+        starter_notebook_tests ${OPAL_ROOT}/starter-notebooks
+    [[ -z "${EXCLUDE_TEST_NOTEBOOKS}" ]] && \
+        test_notebook_tests ${OPAL_ROOT}/test-notebooks
+    [[ -z "${EXCLUDE_DEMO_NOTEBOOKS}" ]] && \
+        demo_notebook_tests ${OPAL_ROOT}/demo-notebooks
+
+    test_default_environment
+
+    if (( ${FAILURES} != 0 )) ; then
+        echo "FAILURE"
+        exit 1
+    fi
+}
+
+main
+
