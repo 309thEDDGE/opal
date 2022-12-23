@@ -59,9 +59,12 @@ def filter_ran(parse_inputs, dts, translate_type):
     _, parse_type = tip_translate_flow.translate_options[translate_type]
     no_data_of_type = {
         r for r in parse_inputs
-        if not f"parsed_{parse_type}" in parse_flow[r].data.tip_metadata
+        if (
+            parse_flow[r].successful and 
+            not f"parsed_{parse_type}" in parse_flow[r].data.tip_metadata
+        )
     }
-
+    
     # let the user know what's going on
     if already_translated:
         print(
