@@ -5,6 +5,9 @@
             "anon":true,
             "client_kwargs":{"region_name":"us-gov-west-1"}
         },
-        "urls":["s3://opal-data/nasa-ch10/**.ch10"]
+        "urls":[
+            "s3://opal-data/nasa-ch10/**.ch10",
+            "s3://opal-data/telemetry-demo-data/*.ch10"
+        ]
     }
 }

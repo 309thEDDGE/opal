@@ -8,6 +8,12 @@ import tempfile
 import subprocess
 import yaml
 
+# datasets that can be translated
+# title : (tip_cli_program, parsed_dataset_name)
+translate_options = {
+    "MILSTD1553": ("tip_translate_1553", "MILSTD1553_F1"),
+    "ARINC429": ("tip_translate_arinc429", "ARINC429_F0"),
+}
 
 class TipTranslateFlow(opal.flow.OpalFlowSpec):
     parse_pointer = metaflow.Parameter(
@@ -21,12 +27,7 @@ class TipTranslateFlow(opal.flow.OpalFlowSpec):
 
     dts = metaflow.Parameter("dts", help="ICD to translate the parsed data with")
 
-    # datasets that can be translated
-    # title : (tip_cli_program, parsed_dataset_name)
-    translate_options = {
-        "MILSTD1553": ("tip_translate_1553", "MILSTD1553_F1"),
-        "ARINC429": ("tip_translate_arinc429", "ARINC429_F0"),
-    }
+
     translate_type = metaflow.Parameter(
         "type",
         help=f"What type of data to translate ({'|'.join(translate_options.keys())})",
@@ -42,7 +43,7 @@ class TipTranslateFlow(opal.flow.OpalFlowSpec):
         parse_flow = metaflow.Flow("TipParseFlow")
         self.parse_run = parse_flow[self.parse_pointer]
 
-        assert self.translate_type in self.translate_options
+        assert self.translate_type in translate_options
 
         if os.path.exists(self.temp_dir):
             shutil.rmtree(self.temp_dir)
@@ -61,7 +62,7 @@ class TipTranslateFlow(opal.flow.OpalFlowSpec):
         s3fs = opal.flow.minio_s3fs()
 
         # construct the S3 path to the parquet file
-        _, parse_dataset_name = self.translate_options[self.translate_type]
+        _, parse_dataset_name = translate_options[self.translate_type]
         self.parse_data_s3_path = os.path.join(
             self.parse_run.data.data_files["parsed_data"],
             f"{self.parse_run.data.ch10_name}_{parse_dataset_name}.parquet",
@@ -78,7 +79,7 @@ class TipTranslateFlow(opal.flow.OpalFlowSpec):
         """
         Run tip_translate
         """
-        tip_command, file_name = self.translate_options[self.translate_type]
+        tip_command, file_name = translate_options[self.translate_type]
         subprocess.run(
             [tip_command, self.dtemp, self.dts, "-o", self.temp_dir, "-L", "off"]
         )

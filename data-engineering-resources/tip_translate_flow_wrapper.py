@@ -1,5 +1,6 @@
 import metaflow
 
+import tip_translate_flow
 import os
 import subprocess
 import sys
@@ -53,6 +54,14 @@ def filter_ran(parse_inputs, dts, translate_type):
         if "no_data" in parse_flow[r].tags or not parse_flow[r].successful
     }
 
+    # parsed datasets that don't have any data of the type to be translated
+    # i.e. we're translating ARINC429, but the parsed data only has MILSTD1553
+    _, parse_type = tip_translate_flow.translate_options[translate_type]
+    no_data_of_type = {
+        r for r in parse_inputs
+        if not f"parsed_{parse_type}" in parse_flow[r].data.tip_metadata
+    }
+
     # let the user know what's going on
     if already_translated:
         print(
@@ -61,7 +70,12 @@ def filter_ran(parse_inputs, dts, translate_type):
         for pid in parse_inputs.intersection(already_translated):
             print(pid)
 
-    return parse_inputs - already_translated - invalid_parse_sets
+    if no_data_of_type:
+        print(f"These parsed datasets don't have any {parse_type} data:")
+        for pid in parse_inputs.intersection(no_data_of_type):
+            print(pid)
+
+    return parse_inputs - already_translated - invalid_parse_sets - no_data_of_type
 
 
 def main(dts, translate_type, force=False):
@@ -76,4 +90,8 @@ def main(dts, translate_type, force=False):
 
 
 if __name__ == "__main__":
+    if not sys.argv[1] in tip_translate_flow.translate_options:
+        print(f"Not a translatable type: {sys.argv[1]}")
+        print(f"Choose from one of {tip_translate_flow.translate_options.keys()}")
     main(sys.argv[2], sys.argv[1])
+

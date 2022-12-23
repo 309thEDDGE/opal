@@ -13,8 +13,7 @@ python tip_utils.py delete-translated-orphans
 
 # translate it all
 python tip_translate_flow_wrapper.py MILSTD1553 ~/DTS/DTS1553_Synth_Nasa.yaml
-# no arinc429 data for now
-# python tip_translate_flow_wrapper.py ARINC429 ~/DTS/DTS429_Synth_NASA.yaml
+python tip_translate_flow_wrapper.py ARINC429 ~/DTS/DTS429_Synth_NASA.yaml
 
 # re-catalog everything
 python tip_midnight_catalog_generator.py run
