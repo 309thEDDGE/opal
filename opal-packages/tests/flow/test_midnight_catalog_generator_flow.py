@@ -1,5 +1,6 @@
 import subprocess
 import metaflow
+import os
 from opal.flow.flow_script_utils import *
 
 midnight_cat_pickle_util_str = """import metaflow;
@@ -10,13 +11,18 @@ for key, val in run.data.__dict__['_artifacts'].items():
     temp = val.data
 """
 
+singleuser_python_path = '/opt/conda/envs/singleuser/bin/python'
+torch_python_path = '/opt/conda/envs/torch/bin/python'
+midnight_cat_flow_path ='/home/jovyan/opal/data-engineering-resources/tip_midnight_catalog_generator.py'
+
 def test_midnight_flow_torch_create_singleuser_read():
     # Run the flow from torch, read back from single user
-    subprocess.run(['/opt/conda/envs/torch/bin/python', '/home/jovyan/opal/data-engineering-resources/tip_midnight_catalog_generator.py', '--no-pylint', 'run', '--tag', 'test'])
-    run = subprocess.run(['/opt/conda/envs/singleuser/bin/python', '-c', midnight_cat_pickle_util_str], capture_output=True)
-    print( 'exit status:', run.returncode )
-    print( 'stdout:', run.stdout.decode() )
-    print( 'stderr:', run.stderr.decode() )
+    subprocess.run([torch_python_path, midnight_cat_flow_path, '--no-pylint', 'run', '--tag', 'test'])
+    run = subprocess.run([singleuser_python_path, '-c', midnight_cat_pickle_util_str], capture_output=True)
+    if run.returncode != 0:
+        print( 'exit status:', run.returncode )
+        print( 'stdout:', run.stdout.decode() )
+        print( 'stderr:', run.stderr.decode() )
     run.check_returncode()
     
     # clean up
@@ -24,11 +30,12 @@ def test_midnight_flow_torch_create_singleuser_read():
 
 def test_midnight_flow_singleuser_create_torch_read():
     # Run the flow from singleuser, read back from torch
-    subprocess.run(['/opt/conda/envs/singleuser/bin/python', '/home/jovyan/opal/data-engineering-resources/tip_midnight_catalog_generator.py', '--no-pylint', 'run', '--tag', 'test'])
-    run = subprocess.run(['/opt/conda/envs/torch/bin/python', '-c', midnight_cat_pickle_util_str], capture_output=True)
-    print( 'exit status:', run.returncode )
-    print( 'stdout:', run.stdout.decode() )
-    print( 'stderr:', run.stderr.decode() )
+    subprocess.run([singleuser_python_path, midnight_cat_flow_path, '--no-pylint', 'run', '--tag', 'test'])
+    run = subprocess.run([torch_python_path, '-c', midnight_cat_pickle_util_str], capture_output=True)
+    if run.returncode != 0:
+        print( 'exit status:', run.returncode )
+        print( 'stdout:', run.stdout.decode() )
+        print( 'stderr:', run.stderr.decode() )
     run.check_returncode()
     
     # clean up

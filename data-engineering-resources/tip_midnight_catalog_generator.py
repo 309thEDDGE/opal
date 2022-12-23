@@ -19,10 +19,9 @@ class TipMidnightCatalog(opal.flow.OpalFlowSpec):
         make sure there is the required data to catalog
         """
         # get the necessary flows
-        if 'test' in metaflow.current.tags:
-            self.test = True
-        else:
-            self.test = False
+        self.test = bool('test' in metaflow.current.tags)
+        if self.test:
+            print('Running flow in TEST mode')
         self.ch10_run = metaflow.Flow("Chapter10Catalog").latest_successful_run
         self.parse_flow = metaflow.Flow("TipParseFlow")
         self.translate_flow = metaflow.Flow("TipTranslateFlow")
@@ -56,7 +55,6 @@ class TipMidnightCatalog(opal.flow.OpalFlowSpec):
             )
             # If testing, only iterate once
             if self.test:
-                print('Testing')
                 break
 
         self.next(self.add_parse_data)
@@ -98,7 +96,6 @@ class TipMidnightCatalog(opal.flow.OpalFlowSpec):
                     )
                     
             if self.test:
-                print('Testing')
                 break
 
         self.next(self.add_translate_data)
@@ -137,7 +134,6 @@ class TipMidnightCatalog(opal.flow.OpalFlowSpec):
                     )
                     
             if self.test:
-                print('Testing')
                 break
 
         self.next(self.upload_table)
@@ -149,7 +145,6 @@ class TipMidnightCatalog(opal.flow.OpalFlowSpec):
         """
         temp_df = self.generator.to_dataframe().set_index("ch10_name")
         temp_path = os.path.join(tempfile.gettempdir(), "tip_catalog.parquet")
-        temp_path = str(temp_path)
         temp_df.to_parquet(temp_path)
         self.upload(temp_path, key="parquet_table")
         self.next(self.end)
