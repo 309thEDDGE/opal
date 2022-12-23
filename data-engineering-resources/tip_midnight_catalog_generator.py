@@ -19,11 +19,14 @@ class TipMidnightCatalog(opal.flow.OpalFlowSpec):
         make sure there is the required data to catalog
         """
         # get the necessary flows
+        if 'test' in metaflow.current.tags:
+            self.test = True
+        else:
+            self.test = False
         self.ch10_run = metaflow.Flow("Chapter10Catalog").latest_successful_run
         self.parse_flow = metaflow.Flow("TipParseFlow")
         self.translate_flow = metaflow.Flow("TipTranslateFlow")
         self.generator = MidnightCatalogGenerator()
-
         self.next(self.add_ch10_cat_data)
 
     @step
@@ -51,6 +54,10 @@ class TipMidnightCatalog(opal.flow.OpalFlowSpec):
                 ],
                 name,
             )
+            # If testing, only iterate once
+            if self.test:
+                print('Testing')
+                break
 
         self.next(self.add_parse_data)
 
@@ -89,6 +96,10 @@ class TipMidnightCatalog(opal.flow.OpalFlowSpec):
                     self.generator.add(
                         [{"column": m["dataset"], "value": file}], run.data.ch10_name
                     )
+                    
+            if self.test:
+                print('Testing')
+                break
 
         self.next(self.add_translate_data)
 
@@ -124,15 +135,10 @@ class TipMidnightCatalog(opal.flow.OpalFlowSpec):
                         [{"column": m["dataset"], "value": file}],
                         run.data.parse_run.data.ch10_name,
                     )
-
-        self.next(self.generate_table)
-
-    @step
-    def generate_table(self):
-        """
-        Make the parquet table
-        """
-        self.catalog_df = self.generator.to_dataframe().set_index("ch10_name")
+                    
+            if self.test:
+                print('Testing')
+                break
 
         self.next(self.upload_table)
 
@@ -141,9 +147,10 @@ class TipMidnightCatalog(opal.flow.OpalFlowSpec):
         """
         Save the table as parquet and upload to S3
         """
+        temp_df = self.generator.to_dataframe().set_index("ch10_name")
         temp_path = os.path.join(tempfile.gettempdir(), "tip_catalog.parquet")
         temp_path = str(temp_path)
-        self.catalog_df.to_parquet(temp_path)
+        temp_df.to_parquet(temp_path)
         self.upload(temp_path, key="parquet_table")
         self.next(self.end)
 
