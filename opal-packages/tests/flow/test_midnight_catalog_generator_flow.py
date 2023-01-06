@@ -1,7 +1,5 @@
 import subprocess
 import metaflow
-import os
-import sys
 from opal.flow.flow_script_utils import *
 
 singleuser_python_path = '/opt/conda/envs/singleuser/bin/python'
