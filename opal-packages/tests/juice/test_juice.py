@@ -4,12 +4,7 @@ import uuid
 import pytest
 import tempfile
 import json
-
-
-
-# Validate that upload was successful
-# Ensure metadata can be written as json
-# valid paths upload path
+import botocore
 
 # test if local_dir_path exists
 def test_upload_datum_local_dirpath_exists():
@@ -23,7 +18,8 @@ def test_upload_datum_local_dirpath_exists():
         
 # check if upload_path is a string
 def test_upload_datum_upload_path_is_string():
-    local_dir_path = "/home/jovyan"
+    temp_dir = tempfile.TemporaryDirectory()
+    local_dir_path = temp_dir.name
     unique_id = uuid.uuid1().int
     datum_type = 'test_datum_type'
     upload_path = 1234
@@ -33,7 +29,8 @@ def test_upload_datum_upload_path_is_string():
         
 # check if unique_id is an int
 def test_upload_datum_unique_id_int():
-    local_dir_path = "/home/jovyan"
+    temp_dir = tempfile.TemporaryDirectory()
+    local_dir_path = temp_dir.name
     unique_id = "fake id"
     datum_type = 'test_datum_type'
     upload_path = f"data-store/{datum_type}/{unique_id}"
@@ -43,7 +40,8 @@ def test_upload_datum_unique_id_int():
         
 # check if datum_type is a string
 def test_upload_datum_type_is_string():
-    local_dir_path = "/home/jovyan"
+    temp_dir = tempfile.TemporaryDirectory()
+    local_dir_path = temp_dir.name
     unique_id = uuid.uuid1().int
     datum_type = 1234
     upload_path = f"data-store/{datum_type}/{unique_id}"
@@ -53,7 +51,8 @@ def test_upload_datum_type_is_string():
         
 # check if parent_ids is a list of ints
 def test_upload_datum_parent_ids_list_int():
-    local_dir_path = "/home/jovyan"
+    temp_dir = tempfile.TemporaryDirectory()
+    local_dir_path = temp_dir.name
     unique_id = uuid.uuid1().int
     datum_type = 'test_datum_type'
     upload_path = f"data-store/{datum_type}/{unique_id}"
@@ -64,7 +63,8 @@ def test_upload_datum_parent_ids_list_int():
         
 # check if parent_ids is a list of ints
 def test_upload_datum_parent_ids_is_list():
-    local_dir_path = "/home/jovyan"
+    temp_dir = tempfile.TemporaryDirectory()
+    local_dir_path = temp_dir.name
     unique_id = uuid.uuid1().int
     datum_type = 'test_datum_type'
     upload_path = f"data-store/{datum_type}/{unique_id}"
@@ -75,7 +75,8 @@ def test_upload_datum_parent_ids_is_list():
         
 # check if metadata is a dictionary
 def test_upload_datum_metadata_is_dictionary():
-    local_dir_path = "/home/jovyan"
+    temp_dir = tempfile.TemporaryDirectory()
+    local_dir_path = temp_dir.name
     unique_id = uuid.uuid1().int
     datum_type = 'test_datum_type'
     upload_path = f"data-store/{datum_type}/{unique_id}"
@@ -86,7 +87,8 @@ def test_upload_datum_metadata_is_dictionary():
         
 # check if label is string
 def test_upload_datum_metadata_is_dictionary():
-    local_dir_path = "/home/jovyan"
+    temp_dir = tempfile.TemporaryDirectory()
+    local_dir_path = temp_dir.name
     unique_id = uuid.uuid1().int
     datum_type = 'test_datum_type'
     upload_path = f"data-store/{datum_type}/{unique_id}"
@@ -179,3 +181,14 @@ def test_upload_datum_check_existing_upload_path():
     # cleanup
     temp_dir.cleanup()
     
+def test_upload_datum_invalid_upload_path():
+    
+    temp_dir = tempfile.TemporaryDirectory()
+    local_dir_path = temp_dir.name
+    unique_id = uuid.uuid1().int
+    datum_type = 'pytest'
+    upload_path = ";invalid_path"
+
+    with pytest.raises(botocore.exceptions.ParamValidationError, match = f"Invalid bucket name"):
+        upload_datum(local_dir_path, upload_path,
+                     unique_id, datum_type)

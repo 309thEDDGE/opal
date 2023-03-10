@@ -63,6 +63,7 @@ def upload_datum(local_dir_path,
         json.dump(metadata, outfile)
 
     upload_path = f"s3://{upload_directory}"
+    # if not is not all throw exception
     opal_s3fs.upload(local_dir_path, upload_directory, recursive=True)
     opal_s3fs.upload(datum_json_path, os.path.join(upload_directory,'datum.json'))
     opal_s3fs.upload(metadata_path, os.path.join(upload_directory,'metadata.json'))
