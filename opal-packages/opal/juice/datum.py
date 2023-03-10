@@ -4,6 +4,7 @@ import opal.flow
 import s3fs
 import time 
 import uuid
+import tempfile
 
 def upload_datum(local_dir_path, 
                  upload_directory, 
@@ -36,9 +37,17 @@ def upload_datum(local_dir_path,
         
     if not type(label) == str:
         raise ValueError(f"'label' must be a string: '{label}'")
+    
+    opal_s3fs = opal.flow.minio_s3fs()
+    
+    if opal_s3fs.isdir(upload_directory):
+        raise FileExistsError(f"'upload_directory' already exists: '{upload_directory}''")
         
-    datum_json_path = f'{local_dir_path}/datum.json'
-    metadata_path = f'{local_dir_path}/metadata.json'
+    temp_dir = tempfile.TemporaryDirectory()
+    temp_dir_path = temp_dir.name
+        
+    datum_json_path = os.path.join(temp_dir_path, 'datum.json')
+    metadata_path = os.path.join(temp_dir_path, 'metadata.json')
 
     datum_json = {}
     datum_json['uuid'] = unique_id
@@ -54,6 +63,9 @@ def upload_datum(local_dir_path,
         json.dump(metadata, outfile)
 
     upload_path = f"s3://{upload_directory}"
-    opal_s3fs = opal.flow.minio_s3fs()
     opal_s3fs.upload(local_dir_path, upload_directory, recursive=True)
+    opal_s3fs.upload(datum_json_path, os.path.join(upload_directory,'datum.json'))
+    opal_s3fs.upload(metadata_path, os.path.join(upload_directory,'metadata.json'))
+    
+    temp_dir.cleanup()
     
