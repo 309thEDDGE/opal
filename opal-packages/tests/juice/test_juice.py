@@ -1,11 +1,13 @@
-from opal.juice.datum import upload_datum
-import opal.flow
 import uuid
+import os
 import pytest
 import tempfile
 import json
 import botocore
-import os
+
+from opal.juice.datum import upload_datum
+import opal.flow
+
 
 # test if local_dir_path exists
 def test_upload_datum_local_dirpath_exists():
@@ -62,7 +64,7 @@ def test_upload_datum_parent_ids_list_int():
 
     with pytest.raises(ValueError, match = f"'parent_ids' must be a list of int:"):
         upload_datum(local_dir_path, upload_path, unique_id, datum_type, parent_ids=parent_ids_in)
-        
+
 # check if parent_ids is a list of ints
 def test_upload_datum_parent_ids_is_list():
     temp_dir = tempfile.TemporaryDirectory()

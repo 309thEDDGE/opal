@@ -1,41 +1,39 @@
 import json
 import os
 import opal.flow
-import s3fs
-import time 
-import uuid
+import time
 import tempfile
 
 def upload_datum(local_dir_path, 
-                 upload_directory, 
+                 upload_directory,
                  unique_id,
                  datum_type, 
                  parent_ids = [],
                  metadata = {}, 
                  label = ''):
-        
+
     if not os.path.isdir(local_dir_path):
         raise FileNotFoundError(f"'local_dir_path' does not exist: '{local_dir_path}'")
-        
-    if not type(upload_directory) == str:
+
+    if not isinstance(upload_directory, str):
         raise ValueError(f"'upload_directory' must be a string: '{upload_directory}'")
 
-    if not type(unique_id) == int:
+    if not isinstance(unique_id, int):
         raise ValueError(f"'unique_id' must be an int: '{unique_id}'")
 
-    if not type(datum_type) == str:
+    if not isinstance(datum_type, str):
         raise ValueError(f"'datum_type' must be a string: '{datum_type}'")
 
-    if not type(parent_ids) == list:
+    if not isinstance(parent_ids, list):
         raise ValueError(f"'parent_ids' must be a list of int: '{parent_ids}'")
 
     if not all(isinstance(x, int) for x in parent_ids):
         raise ValueError(f"'parent_ids' must be a list of int: '{parent_ids}'")
 
-    if not type(metadata) == dict:
+    if not isinstance(metadata, dict):
         raise ValueError(f"'metadata' must be a dictionary: '{metadata}'")
 
-    if not type(label) == str:
+    if not isinstance(label, str):
         raise ValueError(f"'label' must be a string: '{label}'")
 
     opal_s3fs = opal.flow.minio_s3fs()
@@ -48,7 +46,6 @@ def upload_datum(local_dir_path,
 
     datum_json_path = os.path.join(temp_dir_path, 'datum.json')
     metadata_path = os.path.join(temp_dir_path, 'metadata.json')
-
     datum_json = {}
     datum_json['uuid'] = unique_id
     datum_json['upload_time'] = time.time_ns() // 1000
@@ -63,8 +60,8 @@ def upload_datum(local_dir_path,
         json.dump(metadata, outfile)
 
     upload_path = f"s3://{upload_directory}"
-    opal_s3fs.upload(local_dir_path, upload_directory, recursive=True)
-    opal_s3fs.upload(datum_json_path, os.path.join(upload_directory,'datum.json'))
-    opal_s3fs.upload(metadata_path, os.path.join(upload_directory,'metadata.json'))
-
-    temp_dir.cleanup()   
+    opal_s3fs.upload(local_dir_path, upload_path, recursive=True)
+    opal_s3fs.upload(datum_json_path, os.path.join(upload_path,'datum.json'))
+    opal_s3fs.upload(metadata_path, os.path.join(upload_path,'metadata.json'))
+    temp_dir.cleanup()
+    
