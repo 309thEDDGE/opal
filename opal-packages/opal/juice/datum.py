@@ -11,6 +11,45 @@ def upload_datum(local_dir_path,
                  parent_ids = [],
                  metadata = {}, 
                  label = ''):
+    """
+    Upload a Datum to MinIO.
+
+    This function takes in a local directory path along with
+    taging information and creates a metadata.json file and
+    a datum.json file. These two files together with the data 
+    from local_dir_path are uploaded to the upload_directory 
+    path within Min=IO. 
+    
+    datum.json contains:
+        1) unique_id
+        2) list of parent ids
+        3) datum type
+        4) label
+        5) upload date
+        
+    metadata.json contains:
+        1) dictionary passed in through the metadata parameter
+
+    Parameters
+    ----------
+    local_dir_path : str
+        Path to local directory containing data 
+        to be uploaded to MinIO.
+    upload_directory: str
+        MinIO path where data are to be uploaded.
+    unique_id: int
+        Unique ID to identify the data being uploaded.
+    datum_type: str
+        Type of datum being uploaded
+    parent_ids: optional [int]
+        List of unique ids associated with the parent datums
+        used to derive the new datum being uploaded
+    metadata: optional dict,
+        Python dictionary that will be written to metadata.json
+        and stored alongside the datum in MinIO
+    label: optional str,
+        Optional user friendly label associated with the datum 
+    """
 
     if not os.path.isdir(local_dir_path):
         raise FileNotFoundError(f"'local_dir_path' does not exist: '{local_dir_path}'")
