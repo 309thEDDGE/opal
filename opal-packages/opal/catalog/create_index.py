@@ -7,15 +7,14 @@ import opal.flow
 #validate datum keys and value data types on read in
 #create external schema
 
-def validate_datum(datum_address, schema):
-    with opal_s3fs.open(datum_address, 'rb') as file:
-        datum_dict = json.load(file)
-        if list(datum_dict.keys()) != schema:
-            raise ValueError(f'datum found at {datum_address} has invalid schema')
-            
-        ########## validate types for each key
+def validate_datum(datum_dict, schema, datum_address):
+    if list(datum_dict.keys()) != schema:
+        #How can I get the address to work here? what's the best way to do it?
+        raise ValueError(f'datum found at {datum_address} has invalid schema')
         
-        return datum_dict
+    ########## validate types for each key
+    
+    return datum_dict
 
 def create_index_from_s3(root_dir, schema_path):
     opal_s3fs = opal.flow.minio_s3fs()
@@ -32,11 +31,13 @@ def create_index_from_s3(root_dir, schema_path):
 
     for datum_file in datum_files:
         datum_address = f's3://{datum_file}'
-        datum_dict = validate_datum(datum_address, schema)
-        for field in datum_dict.keys():
-            index_dict[field].append(datum_dict[field])
-        index_dict['address'].append(datum_address)
-        index_dict['storage_type'].append('s3')
+        with opal_s3fs.open(datum_address, 'rb') as file:
+            datum_dict = json.load(file)
+            validate_datum(datum_dict, schema, datum_address)
+            for field in datum_dict.keys():
+                index_dict[field].append(datum_dict[field])
+            index_dict['address'].append(datum_address)
+            index_dict['storage_type'].append('s3')
             
     return pd.DataFrame(index_dict)
 
