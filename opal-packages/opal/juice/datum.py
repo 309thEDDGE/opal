@@ -1,8 +1,8 @@
 import json
 import os
-import opal.flow
 import time
 import tempfile
+import opal.flow
 
 def upload_datum(local_dir_path, 
                  upload_directory,
@@ -53,10 +53,10 @@ def upload_datum(local_dir_path,
     datum_json['datum_type'] = datum_type
     datum_json['label'] = label
 
-    with open(datum_json_path, "w") as outfile:
+    with open(datum_json_path, "wb") as outfile:
         json.dump(datum_json, outfile)
 
-    with open(metadata_path, "w") as outfile:
+    with open(metadata_path, "wb") as outfile:
         json.dump(metadata, outfile)
 
     upload_path = f"s3://{upload_directory}"

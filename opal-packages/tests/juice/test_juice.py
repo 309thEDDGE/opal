@@ -8,7 +8,6 @@ import botocore
 from opal.juice.datum import upload_datum
 import opal.flow
 
-
 # test if local_dir_path exists
 def test_upload_datum_local_dirpath_exists():
     local_dir_path = 'n o t a r e a l p a t h'
