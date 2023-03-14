@@ -15,7 +15,7 @@ def test_upload_datum_local_dirpath_exists():
     datum_type = 'test_datum_type'
     upload_path = f"data-store/{datum_type}/{unique_id}"
 
-    with pytest.raises(FileNotFoundError, 
+    with pytest.raises(FileNotFoundError,
                        match = f"'local_dir_path' does not exist: '{local_dir_path}'"):
         upload_datum(local_dir_path, upload_path, unique_id, datum_type)
 
@@ -127,14 +127,14 @@ def test_upload_datum_successful_run():
                  metadata = metadata_in, label=label_in)
 
     # Assert original local path hasn't been altered
-    with open(json_path, 'r') as f:
-        data = json.load(f)
+    with open(json_path, 'r') as file:
+        data = json.load(file)
         assert data == json_data
     assert original_files == os.listdir(local_dir_path)
 
     # Assert datum.json fields
-    with opal_s3fs.open(f's3://{upload_path}/datum.json', 'rb') as f:
-        datum_json = json.load(f)
+    with opal_s3fs.open(f's3://{upload_path}/datum.json', 'rb') as file:
+        datum_json = json.load(file)
         assert datum_json['uuid'] == unique_id
         assert datum_json['parent_uuids'] == parent_ids_in
         assert datum_json['datum_type'] == datum_type
@@ -142,8 +142,8 @@ def test_upload_datum_successful_run():
         assert 'upload_time' in datum_json.keys()
 
     # Assert metadata.json fields
-    with opal_s3fs.open(f's3://{upload_path}/metadata.json', 'rb') as f:
-        assert json.load(f) == metadata_in
+    with opal_s3fs.open(f's3://{upload_path}/metadata.json', 'rb') as file:
+        assert json.load(file) == metadata_in
 
     # Delete s3 test data
     opal_s3fs.rm(f's3://tests/{datum_type}', recursive = True)
@@ -173,7 +173,8 @@ def test_upload_datum_check_existing_upload_path():
                      f's3://{upload_path}', 
                      recursive = True)
     
-    with pytest.raises(FileExistsError, match = f"'upload_directory' already exists: '{upload_path}''"):
+    with pytest.raises(FileExistsError,
+                       match = f"'upload_directory' already exists: '{upload_path}''"):
         upload_datum(local_dir_path, upload_path, unique_id, datum_type)
 
     # Delete s3 test data
