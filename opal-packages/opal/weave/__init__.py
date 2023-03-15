@@ -1,1 +1,1 @@
-from .weave import upload_basket
+from .uploader import upload_basket
