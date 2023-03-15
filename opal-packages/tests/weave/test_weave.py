@@ -8,16 +8,34 @@ import botocore
 from opal.weave.weave import upload_basket
 import opal.flow
 
+# test if dir path is
 # test if local_dir_path exists
 def test_upload_basket_local_dirpath_exists():
     local_dir_path = 'n o t a r e a l p a t h'
     unique_id = uuid.uuid1().int
     basket_type = 'test_basket_type'
-    upload_path = f"data-store/{basket_type}/{unique_id}"
+    upload_path = f"pytest/{basket_type}/{unique_id}"
 
-    with pytest.raises(FileNotFoundError,
-                       match = f"'local_dir_path' does not exist: '{local_dir_path}'"):
+    with pytest.raises(ValueError,
+                       match = f"'local_dir_path' must be a valid directory: '{local_dir_path}'"):
         upload_basket(local_dir_path, upload_path, unique_id, basket_type)
+
+def test_upload_basket_local_dirpath_is_file():
+    # Create basket 
+    temp_dir = tempfile.TemporaryDirectory()
+    json_path = os.path.join(temp_dir.name, "sample.json")
+    local_dir_path = json_path
+    unique_id = uuid.uuid1().int
+    basket_type = 'test_basket_type'
+    upload_path = f"pytest/{basket_type}/{unique_id}"
+    json_data = {'t': [1,2,3]}
+    with open(json_path, "w") as outfile:
+        json.dump(json_data, outfile)
+
+    with pytest.raises(ValueError,
+                       match = f"'local_dir_path' must be a valid directory: '{local_dir_path}'"):
+        upload_basket(local_dir_path, upload_path, unique_id, 
+                     basket_type)
 
 # check if upload_path is a string
 def test_upload_basket_upload_path_is_string():
@@ -36,7 +54,7 @@ def test_upload_basket_unique_id_int():
     local_dir_path = temp_dir.name
     unique_id = "fake id"
     basket_type = 'test_basket_type'
-    upload_path = f"data-store/{basket_type}/{unique_id}"
+    upload_path = f"pytest/{basket_type}/{unique_id}"
 
     with pytest.raises(ValueError, match = f"'unique_id' must be an int: '{unique_id}'"):
         upload_basket(local_dir_path, upload_path, unique_id, basket_type)
@@ -47,7 +65,7 @@ def test_upload_basket_type_is_string():
     local_dir_path = temp_dir.name
     unique_id = uuid.uuid1().int
     basket_type = 1234
-    upload_path = f"data-store/{basket_type}/{unique_id}"
+    upload_path = f"pytest/{basket_type}/{unique_id}"
 
     with pytest.raises(ValueError, match = f"'basket_type' must be a string: '{basket_type}'"):
         upload_basket(local_dir_path, upload_path, unique_id, basket_type)
@@ -58,7 +76,7 @@ def test_upload_basket_parent_ids_list_int():
     local_dir_path = temp_dir.name
     unique_id = uuid.uuid1().int
     basket_type = 'test_basket_type'
-    upload_path = f"data-store/{basket_type}/{unique_id}"
+    upload_path = f"pytest/{basket_type}/{unique_id}"
     parent_ids_in = ['a', 3]
 
     with pytest.raises(ValueError, match = f"'parent_ids' must be a list of int:"):
@@ -70,7 +88,7 @@ def test_upload_basket_parent_ids_is_list():
     local_dir_path = temp_dir.name
     unique_id = uuid.uuid1().int
     basket_type = 'test_basket_type'
-    upload_path = f"data-store/{basket_type}/{unique_id}"
+    upload_path = f"pytest/{basket_type}/{unique_id}"
     parent_ids_in = 56
 
     with pytest.raises(ValueError, match = f"'parent_ids' must be a list of int:"):
@@ -82,7 +100,7 @@ def test_upload_basket_metadata_is_dictionary():
     local_dir_path = temp_dir.name
     unique_id = uuid.uuid1().int
     basket_type = 'test_basket_type'
-    upload_path = f"data-store/{basket_type}/{unique_id}"
+    upload_path = f"pytest/{basket_type}/{unique_id}"
     metadata_in = 'invalid'
 
     with pytest.raises(ValueError, match = f"'metadata' must be a dictionary: '{metadata_in}'"):
@@ -94,7 +112,7 @@ def test_upload_basket_metadata_is_dictionary():
     local_dir_path = temp_dir.name
     unique_id = uuid.uuid1().int
     basket_type = 'test_basket_type'
-    upload_path = f"data-store/{basket_type}/{unique_id}"
+    upload_path = f"pytest/{basket_type}/{unique_id}"
     label_in = 1234
 
     with pytest.raises(ValueError, match = f"'label' must be a string: '{label_in}'"):
@@ -117,7 +135,7 @@ def test_upload_basket_successful_run():
     # Run upload_basket
     unique_id = uuid.uuid1().int
     basket_type = 'pytest'
-    upload_path = f"tests/{basket_type}/{unique_id}"
+    upload_path = f"pytest/{basket_type}/{unique_id}"
     label_in = 'note'
     metadata_in = {'metadata': [1,2,3]}
     parent_ids_in = [5,4,3,2]
@@ -144,10 +162,14 @@ def test_upload_basket_successful_run():
     # Assert metadata.json fields
     with opal_s3fs.open(f's3://{upload_path}/metadata.json', 'rb') as file:
         assert json.load(file) == metadata_in
+        
+    # Assert sample.json
+    with opal_s3fs.open(f's3://{upload_path}/sample.json', 'rb') as file:
+        assert json.load(file) == json_data
 
     # Delete s3 test data
-    opal_s3fs.rm(f's3://tests/{basket_type}', recursive = True)
-    assert opal_s3fs.ls(f's3://tests/{basket_type}') == []
+    opal_s3fs.rm(f's3://pytest/{basket_type}', recursive = True)
+    assert opal_s3fs.ls(f's3://pytest/{basket_type}') == []
 
     # cleanup
     temp_dir.cleanup()
