@@ -52,7 +52,7 @@ def upload_basket(local_dir_path,
     """
 
     if not os.path.isdir(local_dir_path):
-        raise FileNotFoundError(f"'local_dir_path' does not exist: '{local_dir_path}'")
+        raise ValueError(f"'local_dir_path' must be a valid directory: '{local_dir_path}'")
 
     if not isinstance(upload_directory, str):
         raise ValueError(f"'upload_directory' must be a string: '{upload_directory}'")
@@ -96,12 +96,11 @@ def upload_basket(local_dir_path,
         json.dump(basket_json, outfile)
     
     upload_path = f"s3://{upload_directory}"
+    opal_s3fs.upload(local_dir_path, upload_path, recursive=True)
     if metadata != {}:
         with open(metadata_path, "w") as outfile:
             json.dump(metadata, outfile)
         opal_s3fs.upload(metadata_path, os.path.join(upload_path,'metadata.json'))
 
-    opal_s3fs.upload(local_dir_path, upload_path, recursive=True)
     opal_s3fs.upload(basket_json_path, os.path.join(upload_path,'basket_details.json'))
     temp_dir.cleanup()
-    
