@@ -24,7 +24,7 @@ class TestUploadBasket():
     def teardown_method(self):
         if self.opal_s3fs.ls(f's3://{self.basket_path}') != []:
             self.opal_s3fs.rm(f's3://{self.basket_path}', recursive = True)
-            
+
     def teardown_class(cls):
         cls.opal_s3fs.rm(cls.test_bucket, recursive = True)
 
@@ -35,7 +35,7 @@ class TestUploadBasket():
         unique_id = uuid.uuid1().int
         upload_path = f"{self.basket_path}/{unique_id}"
 
-        with pytest.raises(ValueError, match = 
+        with pytest.raises(ValueError, match =
                            f"'local_dir_path' must be a valid directory: '{local_dir_path}'"):
             upload_basket(local_dir_path, upload_path, unique_id, self.basket_type)
 
@@ -52,7 +52,7 @@ class TestUploadBasket():
         with open(json_path, "w") as outfile:
             json.dump(json_data, outfile)
 
-        with pytest.raises(ValueError, match = 
+        with pytest.raises(ValueError, match =
                            f"'local_dir_path' must be a valid directory: '{local_dir_path}'"):
             upload_basket(local_dir_path, upload_path, unique_id,
                          self.basket_type)
@@ -257,7 +257,8 @@ class TestUploadBasket():
         unique_id = uuid.uuid1().int
         upload_path = ";invalid_path"
 
-        with pytest.raises(botocore.exceptions.ParamValidationError, match = f"Invalid bucket name"):
+        with pytest.raises(botocore.exceptions.ParamValidationError,
+                           match = f"Invalid bucket name"):
             upload_basket(local_dir_path, upload_path,
                          unique_id, self.basket_type)
 
