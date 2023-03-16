@@ -14,7 +14,7 @@ class TestUploadBasket():
         cls.basket_type = 'test_basket_type'
         cls.test_bucket = 'pytest'
         cls.basket_path = f'{cls.test_bucket}/{cls.basket_type}'
-        
+
     def setup_method(self):
         if self.opal_s3fs.ls(f's3://{self.basket_path}') != []:
             self.opal_s3fs.rm(f's3://{self.basket_path}', recursive = True)
@@ -63,7 +63,7 @@ class TestUploadBasket():
 
         with pytest.raises(ValueError, match = f"'upload_directory' must be a string: '{upload_path}'"):
             upload_basket(local_dir_path, upload_path, unique_id, self.basket_type)
-            
+
         assert self.opal_s3fs.ls(f's3://{self.basket_path}') == []
 
     # check if unique_id is an int
@@ -100,7 +100,8 @@ class TestUploadBasket():
         parent_ids_in = ['a', 3]
 
         with pytest.raises(ValueError, match = f"'parent_ids' must be a list of int:"):
-            upload_basket(local_dir_path, upload_path, unique_id, self.basket_type, parent_ids=parent_ids_in)
+            upload_basket(local_dir_path, upload_path, unique_id,
+                          self.basket_type, parent_ids=parent_ids_in)
 
         assert self.opal_s3fs.ls(f's3://{self.basket_path}') == []
 
@@ -113,7 +114,8 @@ class TestUploadBasket():
         parent_ids_in = 56
 
         with pytest.raises(ValueError, match = f"'parent_ids' must be a list of int:"):
-            upload_basket(local_dir_path, upload_path, unique_id, self.basket_type, parent_ids=parent_ids_in)
+            upload_basket(local_dir_path, upload_path, unique_id,
+                          self.basket_type, parent_ids=parent_ids_in)
 
         assert self.opal_s3fs.ls(f's3://{self.basket_path}') == []
 
@@ -126,7 +128,8 @@ class TestUploadBasket():
         metadata_in = 'invalid'
 
         with pytest.raises(ValueError, match = f"'metadata' must be a dictionary: '{metadata_in}'"):
-            upload_basket(local_dir_path, upload_path, unique_id, self.basket_type, metadata=metadata_in)
+            upload_basket(local_dir_path, upload_path, unique_id,
+                          self.basket_type, metadata=metadata_in)
 
         assert self.opal_s3fs.ls(f's3://{self.basket_path}') == []
 
@@ -139,7 +142,8 @@ class TestUploadBasket():
         label_in = 1234
 
         with pytest.raises(ValueError, match = f"'label' must be a string: '{label_in}'"):
-            upload_basket(local_dir_path, upload_path, unique_id, self.basket_type, label=label_in)
+            upload_basket(local_dir_path, upload_path, unique_id,
+                          self.basket_type, label=label_in)
 
         assert self.opal_s3fs.ls(f's3://{self.basket_path}') == []
 
