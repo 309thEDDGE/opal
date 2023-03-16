@@ -4,12 +4,12 @@ import time
 import tempfile
 import s3fs
 
-def upload_basket(local_dir_path, 
+def upload_basket(local_dir_path,
                  upload_directory,
                  unique_id,
-                 basket_type, 
+                 basket_type,
                  parent_ids = [],
-                 metadata = {}, 
+                 metadata = {},
                  label = '',
                  test_clean_up = False):
     """
@@ -80,7 +80,7 @@ def upload_basket(local_dir_path,
 
     if opal_s3fs.isdir(upload_directory):
         raise FileExistsError(f"'upload_directory' already exists: '{upload_directory}''")
-        
+
     try:
         temp_dir = tempfile.TemporaryDirectory()
         temp_dir_path = temp_dir.name
@@ -105,14 +105,14 @@ def upload_basket(local_dir_path,
             opal_s3fs.upload(metadata_path, os.path.join(upload_path,'metadata.json'))
 
         opal_s3fs.upload(basket_json_path, os.path.join(upload_path,'basket_manifest.json'))
-        
+
         if test_clean_up:
             raise Exception('Test Clean Up')
-        
+  
     except Exception as e:
         if opal_s3fs.ls(upload_path) != []:
             opal_s3fs.rm(upload_path, recursive = True)
         raise e
-        
+  
     finally:
         temp_dir.cleanup()
