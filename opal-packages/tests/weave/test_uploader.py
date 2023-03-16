@@ -13,8 +13,9 @@ class TestUploadBasket():
         cls.opal_s3fs = s3fs.S3FileSystem(client_kwargs=
                                           {"endpoint_url": os.environ["S3_ENDPOINT"]})
         cls.basket_type = 'test_basket_type'
-        cls.test_bucket = 'pytest'
+        cls.test_bucket = f'pytest-{uuid.uuid1().hex}'
         cls.basket_path = f'{cls.test_bucket}/{cls.basket_type}'
+        cls.opal_s3fs.mkdir(cls.test_bucket)
 
     def setup_method(self):
         if self.opal_s3fs.ls(f's3://{self.basket_path}') != []:
@@ -23,6 +24,9 @@ class TestUploadBasket():
     def teardown_method(self):
         if self.opal_s3fs.ls(f's3://{self.basket_path}') != []:
             self.opal_s3fs.rm(f's3://{self.basket_path}', recursive = True)
+            
+    def teardown_class(cls):
+        cls.opal_s3fs.rm(cls.test_bucket, recursive = True)
 
     # test if dir path is
     # test if local_dir_path exists
