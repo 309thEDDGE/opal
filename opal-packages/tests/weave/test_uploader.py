@@ -4,13 +4,14 @@ import pytest
 import tempfile
 import json
 import botocore
+import s3fs
 
 from opal.weave.uploader import upload_basket
-import opal.flow
 
 class TestUploadBasket():
     def setup_class(cls):
-        cls.opal_s3fs = opal.flow.minio_s3fs()
+        cls.opal_s3fs = s3fs.S3FileSystem(client_kwargs=
+                                          {"endpoint_url": os.environ["S3_ENDPOINT"]})
         cls.basket_type = 'test_basket_type'
         cls.test_bucket = 'pytest'
         cls.basket_path = f'{cls.test_bucket}/{cls.basket_type}'

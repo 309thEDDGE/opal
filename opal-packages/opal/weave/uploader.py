@@ -2,7 +2,7 @@ import json
 import os
 import time
 import tempfile
-import opal.flow
+import s3fs
 
 def upload_basket(local_dir_path, 
                  upload_directory,
@@ -76,7 +76,7 @@ def upload_basket(local_dir_path,
     if not isinstance(label, str):
         raise ValueError(f"'label' must be a string: '{label}'")
 
-    opal_s3fs = opal.flow.minio_s3fs()
+    opal_s3fs = s3fs.S3FileSystem(client_kwargs={"endpoint_url": os.environ["S3_ENDPOINT"]})
 
     if opal_s3fs.isdir(upload_directory):
         raise FileExistsError(f"'upload_directory' already exists: '{upload_directory}''")
