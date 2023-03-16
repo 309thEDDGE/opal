@@ -85,12 +85,27 @@ def upload_basket(local_dir_path,
 
     basket_json_path = os.path.join(temp_dir_path, 'basket_details.json')
     metadata_path = os.path.join(temp_dir_path, 'metadata.json')
+<<<<<<< HEAD:opal-packages/opal/weave/weave.py
     basket_json = {}
     basket_json['uuid'] = unique_id
     basket_json['upload_time'] = time.time_ns() // 1000
     basket_json['parent_uuids'] = parent_ids
     basket_json['basket_type'] = basket_type
     basket_json['label'] = label
+=======
+    datum_json = {}
+    datum_json['uuid'] = unique_id
+    datum_json['upload_time'] = time.time_ns() // 1000
+    datum_json['parent_uuids'] = parent_ids
+    datum_json['datum_type'] = datum_type
+    datum_json['label'] = label
+
+    with open(datum_json_path, "w") as outfile:
+        json.dump(datum_json, outfile)
+
+    with open(metadata_path, "w") as outfile:
+        json.dump(metadata, outfile)
+>>>>>>> 9cc0cd8 (fix bug from fixing pylint issue):opal-packages/opal/juice/datum.py
 
     with open(basket_json_path, "w") as outfile:
         json.dump(basket_json, outfile)
