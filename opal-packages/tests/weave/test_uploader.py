@@ -1,8 +1,8 @@
 import uuid
 import os
-import pytest
 import tempfile
 import json
+import pytest
 import botocore
 import s3fs
 
@@ -150,7 +150,7 @@ class TestUploadBasket():
 
     def test_upload_basket_successful_run(self):
 
-        # Create basket 
+        # Create basket
         temp_dir = tempfile.TemporaryDirectory()
         local_dir_path = temp_dir.name
         json_path = os.path.join(local_dir_path, "sample.json")
@@ -167,8 +167,8 @@ class TestUploadBasket():
         metadata_in = {'metadata': [1,2,3]}
         parent_ids_in = [5,4,3,2]
 
-        upload_basket(local_dir_path, upload_path, unique_id, 
-                     self.basket_type, parent_ids = parent_ids_in, 
+        upload_basket(local_dir_path, upload_path, unique_id,
+                     self.basket_type, parent_ids = parent_ids_in,
                      metadata = metadata_in, label=label_in)
 
         # Assert original local path hasn't been altered
@@ -199,7 +199,7 @@ class TestUploadBasket():
 
     def test_upload_basket_no_metadata(self):
 
-        # Create basket 
+        # Create basket
         temp_dir = tempfile.TemporaryDirectory()
         local_dir_path = temp_dir.name
         json_path = os.path.join(local_dir_path, "sample.json")
@@ -211,7 +211,7 @@ class TestUploadBasket():
         unique_id = uuid.uuid1().int
         upload_path = f"{self.basket_path}/{unique_id}"
 
-        upload_basket(local_dir_path, upload_path, unique_id, 
+        upload_basket(local_dir_path, upload_path, unique_id,
                      self.basket_type)
 
         # Assert metadata.json was not written
@@ -222,7 +222,7 @@ class TestUploadBasket():
 
     def test_upload_basket_check_existing_upload_path(self):
 
-        # Create basket 
+        # Create basket
         temp_dir = tempfile.TemporaryDirectory()
         local_dir_path = temp_dir.name
         json_path = os.path.join(local_dir_path, "sample.json")
@@ -234,7 +234,7 @@ class TestUploadBasket():
         unique_id = uuid.uuid1().int
         upload_path = f"{self.basket_path}/{unique_id}"
 
-        self.opal_s3fs.upload(local_dir_path, 
+        self.opal_s3fs.upload(local_dir_path,
                          f's3://{upload_path}', 
                          recursive = True)
 
