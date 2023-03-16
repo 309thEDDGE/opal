@@ -64,11 +64,7 @@ def test_upload_basket_parent_ids_list_int():
     with pytest.raises(ValueError, match = f"'parent_ids' must be a list of int:"):
         upload_basket(local_dir_path, upload_path, unique_id, basket_type, parent_ids=parent_ids_in)
 
-<<<<<<< HEAD
 # check if parent_ids is a list
-=======
-# check if parent_ids is a list of ints
->>>>>>> f9f92ec (update name add test for writting metadata)
 def test_upload_basket_parent_ids_is_list():
     temp_dir = tempfile.TemporaryDirectory()
     local_dir_path = temp_dir.name
