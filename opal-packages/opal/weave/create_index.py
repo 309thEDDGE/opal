@@ -2,7 +2,7 @@
 USAGE:
 python create_index.py <root_dir> <schema_path>
 root_dir: the root directory of s3 you wish to build your index off of
-schema_path: the path to a local json file that specifies datum keys
+schema_path: the path to a local json file that specifies basket keys
 '''
 
 import json
@@ -10,21 +10,20 @@ import pandas as pd
 import opal.flow
 import argparse
 
-#validate datum keys and value data types on read in
+#validate basket keys and value data types on read in
 
-def validate_datum(datum_dict, schema, datum_address):
-    if list(datum_dict.keys()) != schema:
-        #How can I get the address to work here? what's the best way to do it?
-        raise ValueError(f'datum found at {datum_address} has invalid schema')
+def validate_basket_json(basket_dict, schema, basket_address):
+    if list(basket_dict.keys()) != schema:
+        raise ValueError(f'basket found at {basket_address} has invalid schema')
         
     ########## validate types for each key
     
-    return datum_dict
+    return basket_dict
 
 def create_index_from_s3(root_dir, schema_path):
     opal_s3fs = opal.flow.minio_s3fs()
 
-    datum_files = [x for x in opal_s3fs.find(root_dir) if x.endswith('basket_details.json')]
+    basket_jsons = [x for x in opal_s3fs.find(root_dir) if x.endswith('basket_details.json')]
 
     index_dict = {}
     with open(schema_path) as f:
@@ -35,15 +34,15 @@ def create_index_from_s3(root_dir, schema_path):
     index_dict['storage_type'] = []
     
 
-    for datum_file in datum_files:
-        datum_address = f's3://{datum_file}'
-        with opal_s3fs.open(datum_address, 'rb') as file:
-            datum_dict = json.load(file)
-            validate_datum(datum_dict, schema, datum_address)
-            for field in datum_dict.keys():
-                index_dict[field].append(datum_dict[field])
+    for basket_json in basket_jsons:
+        basket_address = f's3://{basket_json}'
+        with opal_s3fs.open(basket_address, 'rb') as file:
+            basket_dict = json.load(file)
+            validate_basket(basket_dict, schema, basket_address)
+            for field in basket_dict.keys():
+                index_dict[field].append(basket_dict[field])
             #index_dict['uuid'] = index_dict['uuid'].astype(int64)
-            index_dict['address'].append(datum_address)
+            index_dict['address'].append(basket_address)
             index_dict['storage_type'].append('s3')
             
     index = pd.DataFrame(index_dict) 
@@ -52,7 +51,7 @@ def create_index_from_s3(root_dir, schema_path):
 
 if __name__ == "__main__":
     argparser = argparse.ArgumentParser(
-        description="Save a local index of an s3 bucket built off of datums."
+        description="Save a local index of an s3 bucket built off of basket_details.json found within said bucket."
     )
     argparser.add_argument(
         "root_dir",
@@ -64,7 +63,7 @@ if __name__ == "__main__":
         "schema_path",
         metavar="<schema_path>",
         type=str,
-        help="the path to a local json file that specifies datum keys",
+        help="the path to a local json file that specifies basket keys",
     )
     
     args = argparser.parse_args()
