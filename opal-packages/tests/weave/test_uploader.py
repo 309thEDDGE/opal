@@ -31,14 +31,14 @@ class TestUploadBasket():
         unique_id = uuid.uuid1().int
         upload_path = f"{self.basket_path}/{unique_id}"
 
-        with pytest.raises(ValueError,
-                           match = f"'local_dir_path' must be a valid directory: '{local_dir_path}'"):
+        with pytest.raises(ValueError, match = 
+                           f"'local_dir_path' must be a valid directory: '{local_dir_path}'"):
             upload_basket(local_dir_path, upload_path, unique_id, self.basket_type)
 
         assert self.opal_s3fs.ls(f's3://{self.basket_path}') == []
 
     def test_upload_basket_local_dirpath_is_file(self):
-        # Create basket 
+        # Create basket
         temp_dir = tempfile.TemporaryDirectory()
         json_path = os.path.join(temp_dir.name, "sample.json")
         local_dir_path = json_path
@@ -48,9 +48,9 @@ class TestUploadBasket():
         with open(json_path, "w") as outfile:
             json.dump(json_data, outfile)
 
-        with pytest.raises(ValueError,
-                           match = f"'local_dir_path' must be a valid directory: '{local_dir_path}'"):
-            upload_basket(local_dir_path, upload_path, unique_id, 
+        with pytest.raises(ValueError, match = 
+                           f"'local_dir_path' must be a valid directory: '{local_dir_path}'"):
+            upload_basket(local_dir_path, upload_path, unique_id,
                          self.basket_type)
 
         assert self.opal_s3fs.ls(f's3://{self.basket_path}') == []
