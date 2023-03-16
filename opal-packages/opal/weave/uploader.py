@@ -10,7 +10,8 @@ def upload_basket(local_dir_path,
                  basket_type, 
                  parent_ids = [],
                  metadata = {}, 
-                 label = ''):
+                 label = '',
+                 test_clean_up = False):
     """
     Upload a directory of data to MinIO. 
 
@@ -79,28 +80,39 @@ def upload_basket(local_dir_path,
 
     if opal_s3fs.isdir(upload_directory):
         raise FileExistsError(f"'upload_directory' already exists: '{upload_directory}''")
+        
+    try:
+        temp_dir = tempfile.TemporaryDirectory()
+        temp_dir_path = temp_dir.name
 
-    temp_dir = tempfile.TemporaryDirectory()
-    temp_dir_path = temp_dir.name
+        basket_json_path = os.path.join(temp_dir_path, 'basket_manifest.json')
+        metadata_path = os.path.join(temp_dir_path, 'metadata.json')
+        basket_json = {}
+        basket_json['uuid'] = unique_id
+        basket_json['upload_time'] = time.time_ns() // 1000
+        basket_json['parent_uuids'] = parent_ids
+        basket_json['basket_type'] = basket_type
+        basket_json['label'] = label
 
-    basket_json_path = os.path.join(temp_dir_path, 'basket_details.json')
-    metadata_path = os.path.join(temp_dir_path, 'metadata.json')
-    basket_json = {}
-    basket_json['uuid'] = unique_id
-    basket_json['upload_time'] = time.time_ns() // 1000
-    basket_json['parent_uuids'] = parent_ids
-    basket_json['basket_type'] = basket_type
-    basket_json['label'] = label
+        with open(basket_json_path, "w") as outfile:
+            json.dump(basket_json, outfile)
 
-    with open(basket_json_path, "w") as outfile:
-        json.dump(basket_json, outfile)
-    
-    upload_path = f"s3://{upload_directory}"
-    opal_s3fs.upload(local_dir_path, upload_path, recursive=True)
-    if metadata != {}:
-        with open(metadata_path, "w") as outfile:
-            json.dump(metadata, outfile)
-        opal_s3fs.upload(metadata_path, os.path.join(upload_path,'metadata.json'))
+        upload_path = f"s3://{upload_directory}"
+        opal_s3fs.upload(local_dir_path, upload_path, recursive=True)
+        if metadata != {}:
+            with open(metadata_path, "w") as outfile:
+                json.dump(metadata, outfile)
+            opal_s3fs.upload(metadata_path, os.path.join(upload_path,'metadata.json'))
 
-    opal_s3fs.upload(basket_json_path, os.path.join(upload_path,'basket_details.json'))
-    temp_dir.cleanup()
+        opal_s3fs.upload(basket_json_path, os.path.join(upload_path,'basket_manifest.json'))
+        
+        if test_clean_up:
+            raise Exception('Test Clean Up')
+        
+    except Exception as e:
+        if opal_s3fs.ls(upload_path) != []:
+            opal_s3fs.rm(upload_path, recursive = True)
+        raise e
+        
+    finally:
+        temp_dir.cleanup()
