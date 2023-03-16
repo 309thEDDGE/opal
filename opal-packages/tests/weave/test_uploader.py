@@ -66,7 +66,8 @@ class TestUploadBasket():
         unique_id = uuid.uuid1().int
         upload_path = 1234
 
-        with pytest.raises(ValueError, match = f"'upload_directory' must be a string: '{upload_path}'"):
+        with pytest.raises(ValueError, match =
+                           f"'upload_directory' must be a string: '{upload_path}'"):
             upload_basket(local_dir_path, upload_path, unique_id, self.basket_type)
 
         assert self.opal_s3fs.ls(f's3://{self.basket_path}') == []
@@ -266,15 +267,13 @@ class TestUploadBasket():
 
     def test_upload_basket_clean_up_on_error(self):
 
-        # Create basket 
+        # Create basket
         temp_dir = tempfile.TemporaryDirectory()
         local_dir_path = temp_dir.name
         json_path = os.path.join(local_dir_path, "sample.json")
         json_data = {'t': [1,2,3]}
         with open(json_path, "w") as outfile:
             json.dump(json_data, outfile)
-
-        original_files = os.listdir(local_dir_path)
 
         # Run upload_basket
         unique_id = uuid.uuid1().int
