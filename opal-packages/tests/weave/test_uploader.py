@@ -18,12 +18,15 @@ class TestUploadBasket():
         cls.opal_s3fs.mkdir(cls.test_bucket)
 
     def setup_method(self):
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.temp_dir_path = self.temp_dir.name
         if self.opal_s3fs.ls(f's3://{self.basket_path}') != []:
             self.opal_s3fs.rm(f's3://{self.basket_path}', recursive = True)
 
     def teardown_method(self):
         if self.opal_s3fs.ls(f's3://{self.basket_path}') != []:
             self.opal_s3fs.rm(f's3://{self.basket_path}', recursive = True)
+        self.temp_dir.cleanup()
 
     def teardown_class(cls):
         cls.opal_s3fs.rm(cls.test_bucket, recursive = True)
@@ -43,8 +46,7 @@ class TestUploadBasket():
 
     def test_upload_basket_local_dirpath_is_file(self):
         # Create basket
-        temp_dir = tempfile.TemporaryDirectory()
-        json_path = os.path.join(temp_dir.name, "sample.json")
+        json_path = os.path.join(self.temp_dir_path, "sample.json")
         local_dir_path = json_path
         unique_id = uuid.uuid1().int
         upload_path = f"{self.basket_path}/{unique_id}"
@@ -61,12 +63,11 @@ class TestUploadBasket():
 
     # check if upload_path is a string
     def test_upload_basket_upload_path_is_string(self):
-        temp_dir = tempfile.TemporaryDirectory()
-        local_dir_path = temp_dir.name
+        local_dir_path = self.temp_dir_path
         unique_id = uuid.uuid1().int
         upload_path = 1234
 
-        with pytest.raises(ValueError, match =
+        with pytest.raises(TypeError, match =
                            f"'upload_directory' must be a string: '{upload_path}'"):
             upload_basket(local_dir_path, upload_path, unique_id, self.basket_type)
 
@@ -74,38 +75,35 @@ class TestUploadBasket():
 
     # check if unique_id is an int
     def test_upload_basket_unique_id_int(self):
-        temp_dir = tempfile.TemporaryDirectory()
-        local_dir_path = temp_dir.name
+        local_dir_path = self.temp_dir_path
         unique_id = "fake id"
         upload_path = f"{self.basket_path}/{unique_id}"
 
-        with pytest.raises(ValueError, match = f"'unique_id' must be an int: '{unique_id}'"):
+        with pytest.raises(TypeError, match = f"'unique_id' must be an int: '{unique_id}'"):
             upload_basket(local_dir_path, upload_path, unique_id, self.basket_type)
 
         assert self.opal_s3fs.ls(f's3://{self.basket_path}') == []
 
     # check if basket_type is a string
     def test_upload_basket_type_is_string(self):
-        temp_dir = tempfile.TemporaryDirectory()
-        local_dir_path = temp_dir.name
+        local_dir_path = self.temp_dir_path
         unique_id = uuid.uuid1().int
         basket_type = 1234
         upload_path = f"{self.test_bucket}/{str(basket_type)}/{unique_id}"
 
-        with pytest.raises(ValueError, match = f"'basket_type' must be a string: '{basket_type}'"):
+        with pytest.raises(TypeError, match = f"'basket_type' must be a string: '{basket_type}'"):
             upload_basket(local_dir_path, upload_path, unique_id, basket_type)
 
         assert self.opal_s3fs.ls(f's3://{self.basket_path}') == []
 
     # check if parent_ids is a list of ints
     def test_upload_basket_parent_ids_list_int(self):
-        temp_dir = tempfile.TemporaryDirectory()
-        local_dir_path = temp_dir.name
+        local_dir_path = self.temp_dir_path
         unique_id = uuid.uuid1().int
         upload_path = f"{self.basket_path}/{unique_id}"
         parent_ids_in = ['a', 3]
 
-        with pytest.raises(ValueError, match = f"'parent_ids' must be a list of int:"):
+        with pytest.raises(TypeError, match = f"'parent_ids' must be a list of int:"):
             upload_basket(local_dir_path, upload_path, unique_id,
                           self.basket_type, parent_ids=parent_ids_in)
 
@@ -113,13 +111,12 @@ class TestUploadBasket():
 
     # check if parent_ids is a list
     def test_upload_basket_parent_ids_is_list(self):
-        temp_dir = tempfile.TemporaryDirectory()
-        local_dir_path = temp_dir.name
+        local_dir_path = self.temp_dir_path
         unique_id = uuid.uuid1().int
         upload_path = f"{self.basket_path}/{unique_id}"
         parent_ids_in = 56
 
-        with pytest.raises(ValueError, match = f"'parent_ids' must be a list of int:"):
+        with pytest.raises(TypeError, match = f"'parent_ids' must be a list of int:"):
             upload_basket(local_dir_path, upload_path, unique_id,
                           self.basket_type, parent_ids=parent_ids_in)
 
@@ -127,27 +124,25 @@ class TestUploadBasket():
 
     # check if metadata is a dictionary
     def test_upload_basket_metadata_is_dictionary(self):
-        temp_dir = tempfile.TemporaryDirectory()
-        local_dir_path = temp_dir.name
+        local_dir_path = self.temp_dir_path
         unique_id = uuid.uuid1().int
         upload_path = f"{self.basket_path}/{unique_id}"
         metadata_in = 'invalid'
 
-        with pytest.raises(ValueError, match = f"'metadata' must be a dictionary: '{metadata_in}'"):
+        with pytest.raises(TypeError, match = f"'metadata' must be a dictionary: '{metadata_in}'"):
             upload_basket(local_dir_path, upload_path, unique_id,
                           self.basket_type, metadata=metadata_in)
 
         assert self.opal_s3fs.ls(f's3://{self.basket_path}') == []
 
     # check if label is string
-    def test_upload_basket_metadata_is_dictionary(self):
-        temp_dir = tempfile.TemporaryDirectory()
-        local_dir_path = temp_dir.name
+    def test_upload_basket_label_is_string(self):
+        local_dir_path = self.temp_dir_path
         unique_id = uuid.uuid1().int
         upload_path = f"{self.basket_path}/{unique_id}"
         label_in = 1234
 
-        with pytest.raises(ValueError, match = f"'label' must be a string: '{label_in}'"):
+        with pytest.raises(TypeError, match = f"'label' must be a string: '{label_in}'"):
             upload_basket(local_dir_path, upload_path, unique_id,
                           self.basket_type, label=label_in)
 
@@ -156,8 +151,7 @@ class TestUploadBasket():
     def test_upload_basket_successful_run(self):
 
         # Create basket
-        temp_dir = tempfile.TemporaryDirectory()
-        local_dir_path = temp_dir.name
+        local_dir_path = self.temp_dir_path
         json_path = os.path.join(local_dir_path, "sample.json")
         json_data = {'t': [1,2,3]}
         with open(json_path, "w") as outfile:
@@ -199,14 +193,9 @@ class TestUploadBasket():
         with self.opal_s3fs.open(f's3://{upload_path}/sample.json', 'rb') as file:
             assert json.load(file) == json_data
 
-        # cleanup
-        temp_dir.cleanup()
-
     def test_upload_basket_no_metadata(self):
-
         # Create basket
-        temp_dir = tempfile.TemporaryDirectory()
-        local_dir_path = temp_dir.name
+        local_dir_path = self.temp_dir_path
         json_path = os.path.join(local_dir_path, "sample.json")
         json_data = {'t': [1,2,3]}
         with open(json_path, "w") as outfile:
@@ -222,14 +211,9 @@ class TestUploadBasket():
         # Assert metadata.json was not written
         assert self.opal_s3fs.ls(f's3://{upload_path}/metadata.json') == []
 
-        # cleanup
-        temp_dir.cleanup()
-
     def test_upload_basket_check_existing_upload_path(self):
-
         # Create basket
-        temp_dir = tempfile.TemporaryDirectory()
-        local_dir_path = temp_dir.name
+        local_dir_path = self.temp_dir_path
         json_path = os.path.join(local_dir_path, "sample.json")
         json_data = {'t': [1,2,3]}
         with open(json_path, "w") as outfile:
@@ -249,12 +233,8 @@ class TestUploadBasket():
 
         assert self.opal_s3fs.ls(f's3://{self.basket_path}') == [upload_path]
 
-        # cleanup
-        temp_dir.cleanup()
-
     def test_upload_basket_invalid_upload_path(self):
-        temp_dir = tempfile.TemporaryDirectory()
-        local_dir_path = temp_dir.name
+        local_dir_path = self.temp_dir_path
         unique_id = uuid.uuid1().int
         upload_path = ";invalid_path"
 
@@ -266,10 +246,7 @@ class TestUploadBasket():
         assert self.opal_s3fs.ls(f's3://{self.basket_path}') == []
 
     def test_upload_basket_clean_up_on_error(self):
-
-        # Create basket
-        temp_dir = tempfile.TemporaryDirectory()
-        local_dir_path = temp_dir.name
+        local_dir_path = self.temp_dir_path
         json_path = os.path.join(local_dir_path, "sample.json")
         json_data = {'t': [1,2,3]}
         with open(json_path, "w") as outfile:
@@ -286,6 +263,31 @@ class TestUploadBasket():
                          test_clean_up = True)
 
         assert self.opal_s3fs.ls(f's3://{self.basket_path}') == []
+        
+    def test_upload_basket_invalid_optional_argument(self):
+        local_dir_path = self.temp_dir_path
+        unique_id = uuid.uuid1().int
+        upload_path = f"{self.basket_path}/{unique_id}"
+        invalid_arg = 'invalid_arg'
+        
+        with pytest.raises(KeyError,
+                           match = "Invalid kwargs argument: 'junk'"):
+            upload_basket(local_dir_path, upload_path,
+                         unique_id, self.basket_type,
+                         junk = True)
 
-        # cleanup
-        temp_dir.cleanup()
+        assert self.opal_s3fs.ls(f's3://{self.basket_path}') == []
+
+    def test_upload_basket_invalid_test_clean_up_datatype(self):
+        local_dir_path = self.temp_dir_path
+        unique_id = uuid.uuid1().int
+        upload_path = f"{self.basket_path}/{unique_id}"
+        invalid_arg = 'invalid_arg'
+
+        with pytest.raises(TypeError,
+                           match = f"Invalid datatype: 'test_clean_up: must be type <class \'bool\'>'"):
+            upload_basket(local_dir_path, upload_path,
+                         unique_id, self.basket_type,
+                         test_clean_up = 'a')
+
+        assert self.opal_s3fs.ls(f's3://{self.basket_path}') == []

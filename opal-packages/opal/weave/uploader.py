@@ -11,7 +11,7 @@ def upload_basket(local_dir_path,
                  parent_ids = [],
                  metadata = {},
                  label = '',
-                 test_clean_up = False):
+                 **kwargs):
     """
     Upload a directory of data to MinIO. 
 
@@ -51,30 +51,40 @@ def upload_basket(local_dir_path,
     label: optional str,
         Optional user friendly label associated with the basket 
     """
+    
+    kwargs_schema = {'test_clean_up': bool}
+    for key, value in kwargs.items():
+        if key not in kwargs_schema.keys():
+            raise KeyError(f"Invalid kwargs argument: '{key}'")
+            continue
+        if not isinstance(value, kwargs_schema[key]):
+            raise TypeError(f"Invalid datatype: '{key}: must be type {kwargs_schema[key]}'")
+
+    test_clean_up = kwargs.get("test_clean_up", False)
 
     if not os.path.isdir(local_dir_path):
         raise ValueError(f"'local_dir_path' must be a valid directory: '{local_dir_path}'")
 
     if not isinstance(upload_directory, str):
-        raise ValueError(f"'upload_directory' must be a string: '{upload_directory}'")
+        raise TypeError(f"'upload_directory' must be a string: '{upload_directory}'")
 
     if not isinstance(unique_id, int):
-        raise ValueError(f"'unique_id' must be an int: '{unique_id}'")
+        raise TypeError(f"'unique_id' must be an int: '{unique_id}'")
 
     if not isinstance(basket_type, str):
-        raise ValueError(f"'basket_type' must be a string: '{basket_type}'")
+        raise TypeError(f"'basket_type' must be a string: '{basket_type}'")
 
     if not isinstance(parent_ids, list):
-        raise ValueError(f"'parent_ids' must be a list of int: '{parent_ids}'")
+        raise TypeError(f"'parent_ids' must be a list of int: '{parent_ids}'")
 
     if not all(isinstance(x, int) for x in parent_ids):
-        raise ValueError(f"'parent_ids' must be a list of int: '{parent_ids}'")
+        raise TypeError(f"'parent_ids' must be a list of int: '{parent_ids}'")
 
     if not isinstance(metadata, dict):
-        raise ValueError(f"'metadata' must be a dictionary: '{metadata}'")
+        raise TypeError(f"'metadata' must be a dictionary: '{metadata}'")
 
     if not isinstance(label, str):
-        raise ValueError(f"'label' must be a string: '{label}'")
+        raise TypeError(f"'label' must be a string: '{label}'")
 
     opal_s3fs = s3fs.S3FileSystem(client_kwargs={"endpoint_url": os.environ["S3_ENDPOINT"]})
 
