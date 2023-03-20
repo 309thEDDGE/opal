@@ -27,15 +27,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install pylint
-<<<<<<< HEAD
-<<<<<<< HEAD
         pip install setuptools>65.5.1 --force-reinstall
-=======
-        pip install setuptools>65.5.1
->>>>>>> f4d279b (Update pylint.yml)
-=======
-        pip install setuptools>65.5.1 --force-reinstall
->>>>>>> 2128123 (Update pylint.yml)
         pip install -r requirements.txt
 
     - name: Analysing the code with pylint
