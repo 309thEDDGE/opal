@@ -2,7 +2,11 @@
 USAGE:
 python create_index.py <root_dir> <schema_path>
 root_dir: the root directory of s3 you wish to build your index off of
+<<<<<<< HEAD
 schema_path: the path to a local json file that specifies basket keys
+=======
+schema_path: the path to a local json file that specifies datum keys
+>>>>>>> 01b3a38 (save changes)
 '''
 
 import json
@@ -33,7 +37,6 @@ def create_index_from_s3(root_dir, schema_path):
     index_dict['address'] = []
     index_dict['storage_type'] = []
     
-
     for basket_json in basket_jsons:
         basket_address = f's3://{basket_json}'
         with opal_s3fs.open(basket_address, 'rb') as file:
