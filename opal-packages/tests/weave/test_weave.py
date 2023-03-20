@@ -5,7 +5,7 @@ import tempfile
 import json
 import botocore
 
-from opal.weave.weave import upload_basket
+from opal.weave.uploader import upload_basket
 import opal.flow
 
 # test if dir path is
