@@ -5,6 +5,7 @@ import json
 import pytest
 import botocore
 import s3fs
+import hashlib
 
 from opal.weave.uploader import upload_basket, calculate_checksum
 
@@ -59,12 +60,22 @@ class TestCalculateChecksum():
         byte_count_in = 0
         with pytest.raises(ValueError, match = f"'byte_count' must be greater than zero: '{byte_count_in}'"):
             calculate_checksum(file_path, byte_count = byte_count_in)
+          
+    def test_calculate_checksum_large_byte_count(self):
+        file_path = os.path.join(self.temp_dir_path, 'file.json')
+        json_data = {'t': [1,2,3]}
+        with open(file_path, "w") as outfile:
+            json.dump(json_data, outfile)
             
-    # Test file that is smaller than 3 * byte size
-    
-    # Test file that is bigger than 3 * byte count
+        assert '455c7bbc608e9a75767a25d5cd97790b' == calculate_checksum(file_path, 10**6)
 
-
+    def test_calculate_checksum_small_byte_count(self):
+        file_path = os.path.join(self.temp_dir_path, 'file.json')
+        json_data = {'t': [1,2,3]}
+        with open(file_path, "w") as outfile:
+            json.dump(json_data, outfile)
+            
+        assert '455c7bbc608e9a75767a5d5cd97790b' == calculate_checksum(file_path, 5)
 
 class TestUploadBasket():
     def setup_class(cls):

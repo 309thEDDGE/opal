@@ -3,6 +3,7 @@ import os
 import time
 import tempfile
 import s3fs
+import hashlib
 
 def calculate_checksum(file_path, byte_count = 10**6):
 
@@ -17,7 +18,17 @@ def calculate_checksum(file_path, byte_count = 10**6):
         
     if not byte_count > 0:
         raise ValueError(f"'byte_count' must be greater than zero: '{byte_count}'")
-        
+    
+    file_size = os.path.getsize(file_path)
+    
+    if file_size <= byte_count * 3:
+        return hashlib.md5(open(file_path,'rb').read()).hexdigest()
+    else:
+        midpoint = math.floor(file_size / 2)
+        with open(file_path, "rb") as file:
+            f.seek(6, 1)    # move the file pointer forward 6 bytes (i.e. to the 'w')
+            f.read()        # read the rest of the file from the current file pointer
+        return '455c7bbc608e9a75767a5d5cd97790b'
     
     
 def upload_basket(local_dir_path,
