@@ -27,7 +27,7 @@ def validate_basket_json(basket_dict, schema, basket_address):
 def create_index_from_s3(root_dir, schema_path):
     opal_s3fs = opal.flow.minio_s3fs()
 
-    basket_jsons = [x for x in opal_s3fs.find(root_dir) if x.endswith('basket_details.json')]
+    basket_jsons = [x for x in opal_s3fs.find(root_dir) if x.endswith('basket_manifest.json')]
 
     index_dict = {}
     with open(schema_path) as f:
