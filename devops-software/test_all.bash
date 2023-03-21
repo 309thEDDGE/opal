@@ -7,9 +7,6 @@ TEST_ENV="${TEST_ENV:-}"
 #change jupyter setup
 SINGLEUSER_BIN=/opt/conda/envs/singleuser/bin/python3
 SINGLEUSER_ENV=conda-env-singleuser-py
-TORCH_BIN=/opt/conda/envs/torch/bin/python3
-TORCH_ENV=conda-env-torch-py
-
 
 DEFAULT_OPAL_ROOT="$(readlink -e "$(dirname $0)/..")"
 OPAL_ROOT=${OPAL_ROOT:-${DEFAULT_OPAL_ROOT}}
@@ -17,7 +14,6 @@ OPAL_ROOT=${OPAL_ROOT:-${DEFAULT_OPAL_ROOT}}
 #flags
 VERBOSE=""
 EXCLUDE_SINGLEUSER=""
-EXCLUDE_TORCH=""
 EXCLUDE_PYTEST=""
 EXCLUDE_TIP=""
 EXCLUDE_STARTER_NOTEBOOKS=""
@@ -40,7 +36,6 @@ usage:
        [-o|--opal-root OPAL_ROOT]
        [-e|--environment TEST_ENVIRONMENT_NAME]
        [--no-singleuser]
-       [--no-torch]
        [--no-tip]
        [--no-pytest]
        [--no-starter-notebooks]
@@ -60,7 +55,6 @@ usage:
     -o|--opal-root     set directory where opal project is installed
     -v|--verbose       print backtrace for failing notebooks
     --no-singleuser    no tests run for singleuser conda environment
-    --no-torch         no tests run for torch conda environment
     --no-tip           no tests run for TIP
     --no-pytest        no pytest tests are run
     --no-starter-notebooks        do not run starter notebooks
@@ -113,11 +107,6 @@ case "$1" in
 
     --no-singleuser)
         EXCLUDE_SINGLEUSER="EXCLUDE_SINGLEUSER"
-        shift
-        ;;
-
-    --no-torch)
-        EXCLUDE_TORCH="EXCLUDE_TORCH"
         shift
         ;;
 
@@ -194,27 +183,12 @@ EOF
         fi
     fi
 
-    if [[ -z "${EXCLUDE_TORCH}" ]] ; then
-        if ! ${TORCH_BIN} -c "${opal_verification}" &> /dev/null ; then
-            echo "OPAL packages not found in torch environment"
-            ${TORCH_BIN} -m pip install ${OPAL_ROOT}/opal-packages
-            if (( $? != 0 )) ; then
-                echo "failed to install opal packages"
-                exit 1
-            fi
-        fi
-    fi
-
     # make sure the kernels are accessible
     # this will overwrite ~/local/share/jupyter/kernels/{singleuser,torch}/
     echo
     echo "Setting up conda kernels for automated testing."
     if [[ -z "${EXCLUDE_SINGLEUSER}" ]] ; then
         ${SINGLEUSER_BIN} -m ipykernel install --name ${SINGLEUSER_ENV} --user
-    fi
-
-    if [[ -z "${EXCLUDE_TORCH}" ]] ; then
-        ${TORCH_BIN} -m ipykernel install --name ${TORCH_ENV} --user
     fi
 }
 
@@ -229,13 +203,6 @@ pytest_tests() {
         echo
         echo "pytest tests (singleuser)"
         ${SINGLEUSER_BIN} -m pytest -vv ${OPAL_ROOT}/opal-packages \
-            || fail "pytest (singleuser)"
-    fi
-
-    if [[ -z "${EXCLUDE_TORCH}" ]] ; then
-        echo
-        echo "pytest tests (torch)"
-        ${TORCH_BIN} -m pytest -vv ${OPAL_ROOT}/opal-packages \
             || fail "pytest (singleuser)"
     fi
 }
@@ -318,14 +285,6 @@ starter_notebook_tests() {
             --name "starter_notebook_tests (singleuser)" \
             ${notebooks[@]}
     fi
-
-    if [[ -z "${EXCLUDE_TORCH}" ]] ; then
-        echo
-        echo "running starter notebooks (torch)"
-        notebook_tests --conda_environment ${TORCH_ENV} \
-            --name "starter_notebook_tests (torch)" \
-            ${notebooks[@]}
-    fi
 }
 
 #these might have tests that can only be run in one environment
@@ -352,15 +311,6 @@ test_notebook_tests() {
             --name "test_notebook_tests (singleuser)" \
             "${singleuser_notebooks[@]}"
     fi
-
-    if [[ -z "${EXCLUDE_TORCH}" ]] ; then
-        echo
-        echo "running test notebooks (torch)"
-        torch_notebooks+=( "${common_notebooks[@]}" )
-        notebook_tests --conda_environment ${TORCH_ENV} \
-            --name "test_notebook_tests (torch)" \
-            "${torch_notebooks[@]}"
-    fi
 }
 
 demo_notebook_tests() {
@@ -383,15 +333,6 @@ demo_notebook_tests() {
         notebook_tests --conda_environment ${SINGLEUSER_ENV} \
             --name "demo_notebook_tests (singleuser)" \
             "${singleuser_notebooks[@]}"
-    fi
-
-    if [[ -z "${EXCLUDE_TORCH}" ]] ; then
-        echo
-        echo "running demo notebooks (torch)"
-        torch_notebooks+=( "${common_notebooks[@]}" )
-        notebook_tests --conda_environment ${TORCH_ENV} \
-            --name "demo_notebook_tests (torch)" \
-            "${torch_notebooks[@]}"
     fi
 }
 
