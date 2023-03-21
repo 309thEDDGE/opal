@@ -6,7 +6,65 @@ import pytest
 import botocore
 import s3fs
 
-from opal.weave.uploader import upload_basket
+from opal.weave.uploader import upload_basket, calculate_checksum
+
+class TestCalculateChecksum():
+    def setup_class(cls):
+        pass
+
+    def setup_method(self):
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.temp_dir_path = self.temp_dir.name
+
+    def teardown_method(self):
+        self.temp_dir.cleanup()
+
+    def teardown_class(cls):
+        pass
+        
+    def test_calculate_checksum_file_doesnt_exist(self):
+        file_path = 'f a k e f i l e p a t h'
+        with pytest.raises(FileExistsError,
+                           match = f"'file_path' does not exist: '{file_path}'"):
+            calculate_checksum(file_path)
+        
+    def test_calculate_checksum_path_is_string(self):
+        file_path = 10
+        with pytest.raises(TypeError, match = f"'file_path' must be a string: '{file_path}'"):
+            calculate_checksum(file_path)
+            
+    def test_calculate_checksum_byte_count_string(self):
+        file_path = os.path.join(self.temp_dir_path, 'file.json')
+        json_data = {'t': [1,2,3]}
+        with open(file_path, "w") as outfile:
+            json.dump(json_data, outfile)
+        byte_count_in = 'invalid byte count'
+        with pytest.raises(TypeError, match = f"'byte_count' must be an int: '{byte_count_in}'"):
+            calculate_checksum(file_path, byte_count = byte_count_in)
+            
+    def test_calculate_checksum_byte_count_float(self):
+        file_path = os.path.join(self.temp_dir_path, 'file.json')
+        json_data = {'t': [1,2,3]}
+        with open(file_path, "w") as outfile:
+            json.dump(json_data, outfile)
+        byte_count_in = 6.5
+        with pytest.raises(TypeError, match = f"'byte_count' must be an int: '{byte_count_in}'"):
+            calculate_checksum(file_path, byte_count = byte_count_in)
+            
+    def test_calculate_checksum_byte_count_0(self):
+        file_path = os.path.join(self.temp_dir_path, 'file.json')
+        json_data = {'t': [1,2,3]}
+        with open(file_path, "w") as outfile:
+            json.dump(json_data, outfile)
+        byte_count_in = 0
+        with pytest.raises(ValueError, match = f"'byte_count' must be greater than zero: '{byte_count_in}'"):
+            calculate_checksum(file_path, byte_count = byte_count_in)
+            
+    # Test file that is smaller than 3 * byte size
+    
+    # Test file that is bigger than 3 * byte count
+
+
 
 class TestUploadBasket():
     def setup_class(cls):
