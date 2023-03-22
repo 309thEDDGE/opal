@@ -62,20 +62,21 @@ class TestCalculateChecksum():
             calculate_checksum(file_path, byte_count = byte_count_in)
           
     def test_calculate_checksum_large_byte_count(self):
-        file_path = os.path.join(self.temp_dir_path, 'file.json')
-        json_data = {'t': [1,2,3]}
+        file_path = os.path.join(self.temp_dir_path, 'file.txt')
+        file_data = '0123456789'
         with open(file_path, "w") as outfile:
-            json.dump(json_data, outfile)
+            outfile.write(file_data)
             
-        assert '455c7bbc608e9a75767a25d5cd97790b' == calculate_checksum(file_path, 10**6)
+        assert '781e5e245d69b566979b86e28d23f2c7' == calculate_checksum(file_path, 10**6)
 
     def test_calculate_checksum_small_byte_count(self):
-        file_path = os.path.join(self.temp_dir_path, 'file.json')
-        json_data = {'t': [1,2,3]}
+        file_path = os.path.join(self.temp_dir_path, 'file.txt')
+        file_data = '0123456789'
         with open(file_path, "w") as outfile:
-            json.dump(json_data, outfile)
+            outfile.write(file_data)
             
-        assert '455c7bbc608e9a75767a5d5cd97790b' == calculate_checksum(file_path, 5)
+        assert 'fc4d55d4d1deabd2ea826beadbbb7f04' == calculate_checksum(file_path, 2)
+        
 
 class TestUploadBasket():
     def setup_class(cls):
