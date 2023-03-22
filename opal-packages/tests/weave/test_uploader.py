@@ -6,10 +6,12 @@ import pytest
 import botocore
 import s3fs
 import hashlib
+import time
+from datetime import datetime
 
-from opal.weave.uploader import upload_basket, calculate_checksum
+from opal.weave.uploader import upload_basket, derive_integrity_data
 
-class TestCalculateChecksum():
+class TestDeriveIntegrityData():
     def setup_class(cls):
         pass
 
@@ -23,60 +25,80 @@ class TestCalculateChecksum():
     def teardown_class(cls):
         pass
         
-    def test_calculate_checksum_file_doesnt_exist(self):
+    def test_derive_integrity_data_file_doesnt_exist(self):
         file_path = 'f a k e f i l e p a t h'
         with pytest.raises(FileExistsError,
                            match = f"'file_path' does not exist: '{file_path}'"):
-            calculate_checksum(file_path)
+            derive_integrity_data(file_path)
         
-    def test_calculate_checksum_path_is_string(self):
+    def test_derive_integrity_data_path_is_string(self):
         file_path = 10
         with pytest.raises(TypeError, match = f"'file_path' must be a string: '{file_path}'"):
-            calculate_checksum(file_path)
+            derive_integrity_data(file_path)
             
-    def test_calculate_checksum_byte_count_string(self):
+    def test_derive_integrity_data_byte_count_string(self):
         file_path = os.path.join(self.temp_dir_path, 'file.json')
         json_data = {'t': [1,2,3]}
         with open(file_path, "w") as outfile:
             json.dump(json_data, outfile)
         byte_count_in = 'invalid byte count'
         with pytest.raises(TypeError, match = f"'byte_count' must be an int: '{byte_count_in}'"):
-            calculate_checksum(file_path, byte_count = byte_count_in)
+            derive_integrity_data(file_path, byte_count = byte_count_in)
             
-    def test_calculate_checksum_byte_count_float(self):
+    def test_derive_integrity_data_byte_count_float(self):
         file_path = os.path.join(self.temp_dir_path, 'file.json')
         json_data = {'t': [1,2,3]}
         with open(file_path, "w") as outfile:
             json.dump(json_data, outfile)
         byte_count_in = 6.5
         with pytest.raises(TypeError, match = f"'byte_count' must be an int: '{byte_count_in}'"):
-            calculate_checksum(file_path, byte_count = byte_count_in)
+            derive_integrity_data(file_path, byte_count = byte_count_in)
             
-    def test_calculate_checksum_byte_count_0(self):
+    def test_derive_integrity_data_byte_count_0(self):
         file_path = os.path.join(self.temp_dir_path, 'file.json')
         json_data = {'t': [1,2,3]}
         with open(file_path, "w") as outfile:
             json.dump(json_data, outfile)
         byte_count_in = 0
         with pytest.raises(ValueError, match = f"'byte_count' must be greater than zero: '{byte_count_in}'"):
-            calculate_checksum(file_path, byte_count = byte_count_in)
+            derive_integrity_data(file_path, byte_count = byte_count_in)
           
-    def test_calculate_checksum_large_byte_count(self):
+    def test_derive_integrity_data_large_byte_count(self):
         file_path = os.path.join(self.temp_dir_path, 'file.txt')
         file_data = '0123456789'
         with open(file_path, "w") as outfile:
             outfile.write(file_data)
             
-        assert '781e5e245d69b566979b86e28d23f2c7' == calculate_checksum(file_path, 10**6)
+        assert '781e5e245d69b566979b86e28d23f2c7' == derive_integrity_data(file_path, 10**6)['hash']
 
-    def test_calculate_checksum_small_byte_count(self):
+    def test_derive_integrity_data_small_byte_count(self):
         file_path = os.path.join(self.temp_dir_path, 'file.txt')
         file_data = '0123456789'
         with open(file_path, "w") as outfile:
             outfile.write(file_data)
             
-        assert 'fc4d55d4d1deabd2ea826beadbbb7f04' == calculate_checksum(file_path, 2)
+        assert 'fc4d55d4d1deabd2ea826beadbbb7f04' == derive_integrity_data(file_path, 2)['hash']
         
+    def test_derive_integrity_data_file_size(self):
+        file_path = os.path.join(self.temp_dir_path, 'file.txt')
+        file_data = '0123456789'
+        with open(file_path, "w") as outfile:
+            outfile.write(file_data)
+            
+        assert derive_integrity_data(file_path, 2)['file_size'] == 10
+        
+    def test_derive_integrity_data_date(self):
+        file_path = os.path.join(self.temp_dir_path, 'file.txt')
+        file_data = '0123456789'
+        with open(file_path, "w") as outfile:
+            outfile.write(file_data)
+           
+        access_date = derive_integrity_data(file_path, 2)['access_date']
+        access_date = datetime.strptime(access_date, '%m/%d/%Y %H:%M:%S')
+        access_date_seconds = access_date.timestamp() 
+        now_seconds = time.time_ns() // 10**9
+        diff_seconds = abs(access_date_seconds - now_seconds)
+        assert diff_seconds < 60 
 
 class TestUploadBasket():
     def setup_class(cls):
