@@ -11,18 +11,18 @@ def derive_integrity_data(file_path, byte_count = 10**6):
 
     if not isinstance(file_path, str):
         raise TypeError(f"'file_path' must be a string: '{file_path}'")
-    
+
     if not os.path.isfile(file_path):
         raise FileExistsError(f"'file_path' does not exist: '{file_path}'")
-        
+
     if not isinstance(byte_count, int):
         raise TypeError(f"'byte_count' must be an int: '{byte_count}'")
-        
+
     if not byte_count > 0:
         raise ValueError(f"'byte_count' must be greater than zero: '{byte_count}'")
-    
+
     file_size = os.path.getsize(file_path)
-    
+
     if file_size <= byte_count * 3:
         md5_hash = hashlib.md5(open(file_path,'rb').read()).hexdigest()
     else:
@@ -37,12 +37,11 @@ def derive_integrity_data(file_path, byte_count = 10**6):
             file.seek(end_seek_position)
             hasher.update(file.read(byte_count))
         md5_hash = hasher.hexdigest()
-        
+
     return {'file_size': file_size,
             'hash': md5_hash,
             'access_date': datetime.now().strftime("%m/%d/%Y %H:%M:%S")}
-        
-    
+
 def upload_basket(local_dir_path,
                  upload_directory,
                  unique_id,
