@@ -48,6 +48,11 @@ def derive_integrity_data(file_path, byte_count = 10**6):
 
     if not byte_count > 0:
         raise ValueError(f"'byte_count' must be greater than zero: '{byte_count}'")
+        
+    max_byte_count = 300 * 10**6
+    if byte_count > max_byte_count:
+        raise ValueError(f"'byte_count' must be less than or equal to {max_byte_count}"
+                         f" bytes: '{byte_count}'")
 
     file_size = os.path.getsize(file_path)
 

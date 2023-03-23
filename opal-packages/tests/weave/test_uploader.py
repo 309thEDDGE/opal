@@ -96,6 +96,19 @@ class TestDeriveIntegrityData():
         now_seconds = time.time_ns() // 10**9
         diff_seconds = abs(access_date_seconds - now_seconds)
         assert diff_seconds < 60 
+        
+    def test_derive_integrity_data_max_byte_count(self):
+        file_path = os.path.join(self.temp_dir_path, 'file.json')
+        json_data = {'t': [1,2,3]}
+        with open(file_path, "w") as outfile:
+            json.dump(json_data, outfile)
+        byte_count_in = 300 * 10**6 + 1
+        with pytest.raises(ValueError, match = f"'byte_count' must be less "
+                         f"than or equal to 300000000 bytes: '{byte_count_in}'"):
+            derive_integrity_data(file_path, byte_count = byte_count_in)
+        
+        derive_integrity_data(file_path, byte_count = (byte_count_in - 1))
+        
 
 class TestUploadBasket():
     def setup_class(cls):
