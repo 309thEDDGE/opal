@@ -8,7 +8,35 @@ import math
 from datetime import datetime
 
 def derive_integrity_data(file_path, byte_count = 10**6):
+    """
+    Derive basic integrity data from a file.
 
+    This function takes in a file path and calculates
+    the file checksum, file size, and access date (current time).
+
+    Parameters
+    ----------
+    file_path : str
+        Path to file from which integrity data will be derived
+    byte_count: int
+        If the file size is greater than 3 * byte_count, the checksum
+        will be calculated from the beginning, middle, and end bytes 
+        of the file. For example: If the file size is 10 bytes long
+        and the byte_count is 2, the checksum will be calculated from bytes
+        1, 2 (beginning two bytes), 5, 6 (middle two bytes) and 9, 10 
+        (last two bytes). This option is provided to speed up checksum
+        calculation for large files.
+
+    Returns
+    ----------
+    Dictionary  
+     {
+      'file_size': bytes (int),
+      'hash': sha256 hash (string),
+      'access_date': current date/time (string)
+     }
+
+    """
     if not isinstance(file_path, str):
         raise TypeError(f"'file_path' must be a string: '{file_path}'")
 
@@ -24,9 +52,9 @@ def derive_integrity_data(file_path, byte_count = 10**6):
     file_size = os.path.getsize(file_path)
 
     if file_size <= byte_count * 3:
-        md5_hash = hashlib.md5(open(file_path,'rb').read()).hexdigest()
+        sha256_hash = hashlib.sha256(open(file_path,'rb').read()).hexdigest()
     else:
-        hasher = hashlib.md5()
+        hasher = hashlib.sha256()
         midpoint = file_size / 2.0
         midpoint_seek_position = math.floor(midpoint - byte_count/2.0)
         end_seek_position = file_size - byte_count
@@ -36,10 +64,10 @@ def derive_integrity_data(file_path, byte_count = 10**6):
             hasher.update(file.read(byte_count))
             file.seek(end_seek_position)
             hasher.update(file.read(byte_count))
-        md5_hash = hasher.hexdigest()
+        sha256_hash = hasher.hexdigest()
 
     return {'file_size': file_size,
-            'hash': md5_hash,
+            'hash': sha256_hash,
             'access_date': datetime.now().strftime("%m/%d/%Y %H:%M:%S")}
 
 def upload_basket(local_dir_path,

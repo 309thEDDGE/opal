@@ -64,7 +64,8 @@ class TestDeriveIntegrityData():
         with open(file_path, "w") as outfile:
             outfile.write(file_data)
 
-        assert '781e5e245d69b566979b86e28d23f2c7' == derive_integrity_data(file_path, 10**6)['hash']
+        assert '84d89877f0d4041efb6bf91a16f0248f2fd573e6af05c19f96bedb9f882f7882' == \
+        derive_integrity_data(file_path, 10**6)['hash']
 
     def test_derive_integrity_data_small_byte_count(self):
         file_path = os.path.join(self.temp_dir_path, 'file.txt')
@@ -72,7 +73,8 @@ class TestDeriveIntegrityData():
         with open(file_path, "w") as outfile:
             outfile.write(file_data)
 
-        assert 'fc4d55d4d1deabd2ea826beadbbb7f04' == derive_integrity_data(file_path, 2)['hash']
+        assert 'a2a7cb1d7fc8f79e33b716b328e19bb381c3ec96a2dca02a3d1183e7231413bb' == \
+        derive_integrity_data(file_path, 2)['hash']
 
     def test_derive_integrity_data_file_size(self):
         file_path = os.path.join(self.temp_dir_path, 'file.txt')
