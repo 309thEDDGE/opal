@@ -9,7 +9,53 @@ import hashlib
 import time
 from datetime import datetime
 
-from opal.weave.uploader import upload_basket, derive_integrity_data
+from opal.weave.uploader import upload_basket, derive_integrity_data, validate_upload_items, validate_upload_item
+
+class TestValidateUploadItems():
+
+    def setup_method(self):
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.temp_dir_path = self.temp_dir.name
+        
+    def teardown_method(self):
+        self.temp_dir.cleanup()
+        
+    def test_validate_upload_items_correct_schema(self):
+
+        file_path = 'i n v a l i d p a t h'
+        expected_schema_keys = {'path', 'stub'}
+        upload_item = {
+                                'path_invalid_key': file_path,
+                                'stub': True
+                            }
+        with pytest.raises(KeyError,
+                           match = f"invalid 'upload_items' key: got {list(upload_item.keys())}"
+                           f" expected '{expected_schema_keys}'"):
+            validate_upload_item(upload_item)
+            
+        upload_item = {
+                                'path': file_path,
+                                'invalid_stub_key': True
+                            }
+        with pytest.raises(KeyError,
+                           match = f"invalid 'upload_items' key: got {list(upload_item.keys())}"
+                           f" expected {expected_schema_keys}"):
+            validate_upload_item(upload_item)
+        
+        file_path = os.path.join(self.temp_dir_path, 'file.json')
+        json_data = {'t': [1,2,3]}
+        with open(file_path, "w") as outfile:
+            json.dump(json_data, outfile)
+        valid_upload_item = {
+                                'path': file_path,
+                                'stub': True
+                            }
+        validate_upload_item(valid_upload_item)
+        
+    def test_validate_upload_items_files_folders_exist(self):
+        pass
+    def test_validate_upload_items_no_duplicate_file_or_folder(self):
+        pass
 
 class TestDeriveIntegrityData():
 

@@ -7,6 +7,17 @@ import hashlib
 import math
 from datetime import datetime
 
+def validate_upload_item(upload_item):
+    print(upload_item.keys())
+    expected_schema_keys = {'path', 'stub'}
+    if not all(x in expected_schema_keys for x in upload_item.keys()):
+        raise KeyError(f"invalid 'upload_item' key: got {list(upload_item.keys())}"
+                       f" expected {expected_schema_keys}")
+
+def validate_upload_items(upload_items):
+    pass
+    
+
 def derive_integrity_data(file_path, byte_count = 10**6):
     """
     Derive basic integrity data from a file.
