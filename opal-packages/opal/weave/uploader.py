@@ -8,11 +8,21 @@ import math
 from datetime import datetime
 
 def validate_upload_item(upload_item):
-    print(upload_item.keys())
-    expected_schema_keys = {'path', 'stub'}
-    if not all(x in expected_schema_keys for x in upload_item.keys()):
-        raise KeyError(f"invalid 'upload_item' key: got {list(upload_item.keys())}"
-                       f" expected {expected_schema_keys}")
+    expected_schema = {'path': str,
+                       'stub': bool}
+    for key, value in upload_item.items():
+        if key not in expected_schema.keys():
+            raise KeyError(f"Invalid upload_item key: '{key}'"
+                           f"\nExpected keys: {list(expected_schema.keys())}"
+                          )
+        if not isinstance(value, expected_schema[key]):
+            raise TypeError(f"Invalid upload_item type: '{key}: {type(value)}'"
+                            f"\nExpected type: {expected_schema[key]}"
+                           )
+            
+    if not os.path.exists(upload_item['path']):
+        raise FileExistsError(f"'path' does not exist: '{upload_item['path']}'")
+
 
 def validate_upload_items(upload_items):
     pass
@@ -138,7 +148,6 @@ def upload_basket(local_dir_path,
     for key, value in kwargs.items():
         if key not in kwargs_schema.keys():
             raise KeyError(f"Invalid kwargs argument: '{key}'")
-            continue
         if not isinstance(value, kwargs_schema[key]):
             raise TypeError(f"Invalid datatype: '{key}: must be type {kwargs_schema[key]}'")
 

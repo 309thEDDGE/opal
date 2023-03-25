@@ -7,6 +7,7 @@ import botocore
 import s3fs
 import hashlib
 import time
+import re
 from datetime import datetime
 
 from opal.weave.uploader import upload_basket, derive_integrity_data, validate_upload_items, validate_upload_item
@@ -20,26 +21,78 @@ class TestValidateUploadItems():
     def teardown_method(self):
         self.temp_dir.cleanup()
         
-    def test_validate_upload_items_correct_schema(self):
+    def test_validate_upload_item_correct_schema(self):
 
-        file_path = 'i n v a l i d p a t h'
-        expected_schema_keys = {'path', 'stub'}
+        file_path = 'path/path'
+        expected_schema = {'path': str,
+                       'stub': bool}
+        
+        # Invalid Path Key
         upload_item = {
-                                'path_invalid_key': file_path,
-                                'stub': True
-                            }
+                        'path_invalid_key': file_path,
+                        'stub': True
+                      }
         with pytest.raises(KeyError,
-                           match = f"invalid 'upload_items' key: got {list(upload_item.keys())}"
-                           f" expected '{expected_schema_keys}'"):
+                           match = f"Invalid upload_item key: 'path_invalid_key'"):
             validate_upload_item(upload_item)
             
+            
+        # Invalid Stub Key
         upload_item = {
-                                'path': file_path,
-                                'invalid_stub_key': True
-                            }
+                        'path': file_path,
+                        'invalid_stub_key': True
+                      }
         with pytest.raises(KeyError,
-                           match = f"invalid 'upload_items' key: got {list(upload_item.keys())}"
-                           f" expected {expected_schema_keys}"):
+                           match = f"Invalid upload_item key: 'invalid_stub_key'"):
+            validate_upload_item(upload_item)
+            
+        # Extra Key
+        upload_item = {
+                        'path': file_path,
+                        'stub': True,
+                        'extra_key': True,
+                      }
+        with pytest.raises(KeyError,
+                           match = f"Invalid upload_item key: 'extra_key'"):
+            validate_upload_item(upload_item)
+            
+            
+        # Invalid Path Type
+        upload_item = {
+                        'path': 1234,
+                        'stub': True
+                      }
+        with pytest.raises(TypeError,
+                           match = f"Invalid upload_item type: 'path: <class \'int\'>'"):
+            validate_upload_item(upload_item)
+            
+        # Invalid Stub Type
+        upload_item = {
+                        'path': file_path,
+                        'stub': 'invalid type'
+                      }
+        with pytest.raises(TypeError,
+                           match = f"Invalid upload_item type: 'stub: <class \'str\'>'"):
+            validate_upload_item(upload_item)
+        
+        # Correct Schema
+        file_path = os.path.join(self.temp_dir_path, 'file.json')
+        json_data = {'t': [1,2,3]}
+        with open(file_path, "w") as outfile:
+            json.dump(json_data, outfile)
+        valid_upload_item = {
+                                'path': file_path,
+                                'stub': True
+                            }
+        validate_upload_item(valid_upload_item)
+        
+    def test_validate_upload_item_file_exists(self):
+        upload_item = {
+                        'path': 'i n v a l i d p a t h',
+                        'stub': True
+                      }
+        with pytest.raises(FileExistsError,
+                           match = f"'path' does not exist: 'i n v a l i d p a t h'"):
             validate_upload_item(upload_item)
         
         file_path = os.path.join(self.temp_dir_path, 'file.json')
@@ -51,12 +104,22 @@ class TestValidateUploadItems():
                                 'stub': True
                             }
         validate_upload_item(valid_upload_item)
-        
-    def test_validate_upload_items_files_folders_exist(self):
-        pass
+    
+    def test_validate_upload_item_folder_exists(self):
+        file_path = os.path.join(self.temp_dir_path, 'file.json')
+        json_data = {'t': [1,2,3]}
+        with open(file_path, "w") as outfile:
+            json.dump(json_data, outfile)
+        valid_upload_item = {
+                                'path': self.temp_dir_path,
+                                'stub': True
+                            }
+        validate_upload_item(valid_upload_item)
+    
     def test_validate_upload_items_no_duplicate_file_or_folder(self):
         pass
 
+    #def validate first then upload (proper cleanup)
 class TestDeriveIntegrityData():
 
     def setup_method(self):
