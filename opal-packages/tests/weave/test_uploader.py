@@ -10,7 +10,7 @@ import time
 import re
 from datetime import datetime
 
-from opal.weave.uploader import upload_basket, derive_integrity_data, validate_upload_items, validate_upload_item
+from opal.weave.uploader import upload_basket, derive_integrity_data, validate_upload_item
 
 class TestValidateUploadItems():
 
@@ -115,11 +115,13 @@ class TestValidateUploadItems():
                                 'stub': True
                             }
         validate_upload_item(valid_upload_item)
-    
-    def test_validate_upload_items_no_duplicate_file_or_folder(self):
-        pass
+        
+    def test_validate_upload_item_validate_dictionary(self):
+        upload_item = 5
+        with pytest.raises(TypeError,
+                           match = f"'upload_item' must be a dictionary: 'upload_item = 5'"):
+            validate_upload_item(upload_item)
 
-    #def validate first then upload (proper cleanup)
 class TestDeriveIntegrityData():
 
     def setup_method(self):
@@ -242,36 +244,122 @@ class TestUploadBasket():
     def teardown_class(cls):
         cls.opal_s3fs.rm(cls.test_bucket, recursive = True)
 
-    # test if dir path is
-    # test if local_dir_path exists
-    def test_upload_basket_local_dirpath_exists(self):
-        local_dir_path = 'n o t a r e a l p a t h'
+    def test_upload_basket_upload_items_is_list_of_dictionary(self):
+        upload_items = 'n o t a r e a l p a t h'
         unique_id = uuid.uuid1().int
         upload_path = f"{self.basket_path}/{unique_id}"
 
-        with pytest.raises(ValueError, match =
-                           f"'local_dir_path' must be a valid directory: '{local_dir_path}'"):
-            upload_basket(local_dir_path, upload_path, unique_id, self.basket_type)
+        with pytest.raises(TypeError, match =
+                           f"'upload_items' must be a list of dictionaries: '{upload_items}'"):
+            upload_basket(upload_items, upload_path, unique_id, self.basket_type)
+          
+        upload_items = ['invalid', 'invalid2']
+        with pytest.raises(TypeError, match =
+                           f"'upload_items' must be a list of dictionaries:"):
+            upload_basket(upload_items, upload_path, unique_id, self.basket_type)
+            
+        upload_items = [{}, 'invalid2']
+        with pytest.raises(TypeError, match =
+                           f"'upload_items' must be a list of dictionaries:"):
+            upload_basket(upload_items, upload_path, unique_id, self.basket_type)
 
         assert self.opal_s3fs.ls(f's3://{self.basket_path}') == []
-
-    def test_upload_basket_local_dirpath_is_file(self):
-        # Create basket
-        json_path = os.path.join(self.temp_dir_path, "sample.json")
-        local_dir_path = json_path
+        
+    def test_upload_basket_upload_items_invalid_dictionary(self):
         unique_id = uuid.uuid1().int
         upload_path = f"{self.basket_path}/{unique_id}"
+        
+        local_dir_path = self.temp_dir_path
+        json_path = os.path.join(local_dir_path, "sample.json")
         json_data = {'t': [1,2,3]}
         with open(json_path, "w") as outfile:
             json.dump(json_data, outfile)
-
-        with pytest.raises(ValueError, match =
-                           f"'local_dir_path' must be a valid directory: '{local_dir_path}'"):
-            upload_basket(local_dir_path, upload_path, unique_id,
-                         self.basket_type)
+            
+        upload_items = [{
+                            'path': local_dir_path,
+                            'stub': True,
+                        }
+                        ,{
+                            'path_invalid_key': json_path,
+                            'stub': True
+                        }
+                       ]
+        with pytest.raises(KeyError,
+                           match = f"Invalid upload_item key: 'path_invalid_key'"):
+            upload_basket(upload_items, upload_path, unique_id, self.basket_type)
 
         assert self.opal_s3fs.ls(f's3://{self.basket_path}') == []
 
+    def test_upload_basket_upload_items_check_unique_file_folder_names(self):
+        unique_id = uuid.uuid1().int
+        upload_path = f"{self.basket_path}/{unique_id}"
+        
+        temp_dir2 = tempfile.TemporaryDirectory()
+        temp_dir_path2 = temp_dir2.name
+        
+        json_data = {'t': [1,2,3]}
+        
+        json_path1 = os.path.join(self.temp_dir_path, 'sample.json')
+        json_path2 = os.path.join(temp_dir_path2, 'sample.json')
+        
+        with open(json_path1, "w") as outfile:
+            json.dump(json_data, outfile)
+        with open(json_path2, "w") as outfile:
+            json.dump(json_data, outfile)
+            
+        dir_path1 = os.path.join(temp_dir_path2, 'directory_name')
+        dir_path2 = os.path.join(self.temp_dir_path, 'directory_name')
+        os.mkdir(dir_path1)
+        os.mkdir(dir_path2)
+            
+        # Test same file names
+        upload_items = [{
+                            'path': json_path1,
+                            'stub': True,
+                        }
+                        ,{
+                            'path': json_path2,
+                            'stub': True
+                        }
+                       ]
+        with pytest.raises(ValueError,
+                           match = f"'upload_item' folder and file names must be unique:"
+                                   f" Duplicate Name = sample.json"):
+            upload_basket(upload_items, upload_path, unique_id, self.basket_type)
+            
+        # Test same dirname
+        upload_items = [{
+                            'path': dir_path1,
+                            'stub': True,
+                        }
+                        ,{
+                            'path': dir_path2,
+                            'stub': True
+                        }
+                       ]
+        with pytest.raises(ValueError,
+                           match = f"'upload_item' folder and file names must be unique:"
+                                   f" Duplicate Name = directory_name"):
+            upload_basket(upload_items, upload_path, unique_id, self.basket_type)
+            
+        dir_path3 = os.path.join(self.temp_dir_path, 'sample.json')
+        # Test same dirname same file
+        upload_items = [{
+                            'path': json_path1,
+                            'stub': True,
+                        }
+                        ,{
+                            'path': dir_path3,
+                            'stub': True
+                        }
+                       ]
+        with pytest.raises(ValueError,
+                           match = f"'upload_item' folder and file names must be unique:"
+                                   f" Duplicate Name = sample.json"):
+            upload_basket(upload_items, upload_path, unique_id, self.basket_type)
+
+        assert self.opal_s3fs.ls(f's3://{self.basket_path}') == []
+        
     # check if upload_path is a string
     def test_upload_basket_upload_path_is_string(self):
         local_dir_path = self.temp_dir_path

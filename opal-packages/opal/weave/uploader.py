@@ -8,6 +8,10 @@ import math
 from datetime import datetime
 
 def validate_upload_item(upload_item):
+    
+    if not isinstance(upload_item, dict):
+        raise TypeError(f"'upload_item' must be a dictionary: 'upload_item = {upload_item}'")
+        
     expected_schema = {'path': str,
                        'stub': bool}
     for key, value in upload_item.items():
@@ -22,10 +26,6 @@ def validate_upload_item(upload_item):
             
     if not os.path.exists(upload_item['path']):
         raise FileExistsError(f"'path' does not exist: '{upload_item['path']}'")
-
-
-def validate_upload_items(upload_items):
-    pass
     
 
 def derive_integrity_data(file_path, byte_count = 10**6):
@@ -96,7 +96,7 @@ def derive_integrity_data(file_path, byte_count = 10**6):
             'hash': sha256_hash,
             'access_date': datetime.now().strftime("%m/%d/%Y %H:%M:%S")}
 
-def upload_basket(local_dir_path,
+def upload_basket(upload_items,
                  upload_directory,
                  unique_id,
                  basket_type,
@@ -153,9 +153,24 @@ def upload_basket(local_dir_path,
 
     test_clean_up = kwargs.get("test_clean_up", False)
 
-    if not os.path.isdir(local_dir_path):
-        raise ValueError(f"'local_dir_path' must be a valid directory: '{local_dir_path}'")
-
+    if not isinstance(upload_items, list):
+        raise TypeError(f"'upload_items' must be a list of dictionaries: '{upload_items}'")
+        
+    if not all(isinstance(x, dict) for x in upload_items):
+        raise TypeError(f"'upload_items' must be a list of dictionaries: '{upload_items}'")
+        
+    # Validate upload_items
+    local_path_basenames = []
+    for upload_item in upload_items:
+        validate_upload_item(upload_item)
+        local_path_basename = os.path.basename(upload_item['path'])
+        # Check for Duplicate file/folder names
+        if local_path_basename in local_path_basenames:
+            raise ValueError(f"'upload_item' folder and file names must be unique:"
+                             f" Duplicate Name = {local_path_basename}")
+        else:
+            local_path_basenames.append(local_path_basename)
+        
     if not isinstance(upload_directory, str):
         raise TypeError(f"'upload_directory' must be a string: '{upload_directory}'")
 
