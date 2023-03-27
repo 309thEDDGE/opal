@@ -164,7 +164,7 @@ def upload_basket(upload_items,
     for upload_item in upload_items:
         validate_upload_item(upload_item)
         local_path_basename = os.path.basename(upload_item['path'])
-        # Check for Duplicate file/folder names
+        # Check for duplicate file/folder names
         if local_path_basename in local_path_basenames:
             raise ValueError(f"'upload_item' folder and file names must be unique:"
                              f" Duplicate Name = {local_path_basename}")
