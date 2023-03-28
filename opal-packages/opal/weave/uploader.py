@@ -198,11 +198,51 @@ def upload_basket(upload_items,
         raise FileExistsError(f"'upload_directory' already exists: '{upload_directory}''")
 
     try:
+        upload_path = f"s3://{upload_directory}"
         temp_dir = tempfile.TemporaryDirectory()
         temp_dir_path = temp_dir.name
+        
+        supplement_data = {}
+        supplement_data['upload_items'] = upload_items
+        supplement_data['integrity_data'] = []
+        
+        for upload_item in upload_items:
+                    
+            for root, dirs, files in os.walk(upload_item['path']):
+                for name in files:
+                    print(os.path.join(root, name))
+                    print(name)
+            if os.path.isdir(upload_item['path']):
+                for root, dirs, files in os.walk(upload_item['path']):
+                    for name in files:
+                        local_path = os.path.join(root, name)
+                        file_integrity_data = derive_integrity_data(local_path)
+                        file_integrity_data['local_path'] = local_path
+                        if upload_item['stub'] == False:
+                            file_integrity_data['stub'] = False
+                            file_upload_path = os.path.join(upload_path, os.path.basename(upload_item['path']))
+                            file_integrity_data['upload_path'] = file_upload_path
+                            opal_s3fs.upload(upload_item['path'], file_upload_path)
+                        else:
+                            file_integrity_data['stub'] = True
+                            file_integrity_data['upload_path'] = 'stub'
+                        supplement_data['integrity_data'].append(file_integrity_data)
+            else:
+                file_integrity_data = derive_integrity_data(upload_item['path'])
+                file_integrity_data['local_path'] = upload_item['path']
+                if upload_item['stub'] == False:
+                    file_integrity_data['stub'] = False
+                    file_upload_path = os.path.join(upload_path,os.path.basename(upload_item['path']))
+                    file_integrity_data['upload_path'] = file_upload_path
+                    opal_s3fs.upload(upload_item['path'], file_upload_path)
+                else:
+                    file_integrity_data['stub'] = True
+                    file_integrity_data['upload_path'] = 'stub'
+                supplement_data['integrity_data'].append(file_integrity_data) 
 
         basket_json_path = os.path.join(temp_dir_path, 'basket_manifest.json')
-        metadata_path = os.path.join(temp_dir_path, 'metadata.json')
+        metadata_path = os.path.join(temp_dir_path, 'basket_metadata.json')
+        supplement_json_path = os.path.join(temp_dir_path, 'basket_supplement.json')
         basket_json = {}
         basket_json['uuid'] = unique_id
         basket_json['upload_time'] = time.time_ns() // 1000
@@ -212,15 +252,19 @@ def upload_basket(upload_items,
 
         with open(basket_json_path, "w") as outfile:
             json.dump(basket_json, outfile)
-
-        upload_path = f"s3://{upload_directory}"
-        opal_s3fs.upload(local_dir_path, upload_path, recursive=True)
+            
+        opal_s3fs.upload(basket_json_path, os.path.join(upload_path,'basket_manifest.json'))
+        
+        # opal_s3fs.upload(local_dir_path, upload_path, recursive=True)
         if metadata != {}:
             with open(metadata_path, "w") as outfile:
                 json.dump(metadata, outfile)
-            opal_s3fs.upload(metadata_path, os.path.join(upload_path,'metadata.json'))
+            opal_s3fs.upload(metadata_path, os.path.join(upload_path,'basket_metadata.json'))
 
-        opal_s3fs.upload(basket_json_path, os.path.join(upload_path,'basket_manifest.json'))
+        with open(supplement_json_path, "w") as outfile:
+            json.dump(supplement_data, outfile)
+            
+        opal_s3fs.upload(supplement_json_path, os.path.join(upload_path,'basket_supplement.json'))
 
         if test_clean_up:
             raise Exception('Test Clean Up')
