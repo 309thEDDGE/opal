@@ -15,8 +15,7 @@ import opal.flow
 
 
 #validate basket keys and value data types on read in
-
-def validate_basket_json(basket_dict, schema, basket_address):
+def validate_basket_dict(basket_dict, schema, basket_address):
     """
     validate the basket_manifest.json has the correct structure
     
@@ -71,7 +70,7 @@ def create_index_from_s3(root_dir, schema_path):
         basket_address = f's3://{basket_json}'
         with opal_s3fs.open(basket_address, 'rb') as file:
             basket_dict = json.load(file)
-            validate_basket_json(basket_dict, schema, basket_address)
+            validate_basket_dict(basket_dict, schema, basket_address)
             for field in basket_dict.keys():
                 index_dict[field].append(basket_dict[field])
             #index_dict['uuid'] = index_dict['uuid'].astype(int64)
