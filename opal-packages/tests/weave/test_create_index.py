@@ -108,14 +108,14 @@ class TestCreateIndex():
 
     def test_root_dir_does_not_exist(self):
         '''
-        try to create an index in a bucket that doesn't exist, check that it throws an exception
+        try to create an index in a bucket that doesn't exist, check that it throws an error
         '''
         with pytest.raises(FileNotFoundError, match = 'The specified bucket does not exist'):
             minio_index = create_index_from_s3('NOT-A-BUCKET',self.schema_path)
 
     def test_schema_path_does_not_exist(self):
         '''
-        run create index with an invalid schema path, check that it throws an exception
+        run create index with an invalid schema path, check that it throws an error
         '''
         with pytest.raises(FileNotFoundError, match = 'No such file or directory'):
             minio_index = create_index_from_s3(f'{self.test_bucket}','NOT-A-SCHEMA')

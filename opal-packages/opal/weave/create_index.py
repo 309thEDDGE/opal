@@ -20,7 +20,7 @@ def validate_basket_json(basket_dict, schema, basket_address):
     """
     validate the basket_manifest.json has the correct structure
     
-    Parameters
+    Parameters:
         basket_dict: dictionary read in from basket_manifest.json in minio
         schema: loaded from schema_path passed to create_index_from_s3
         basket_address: basket in question. Passed here to create better error message
@@ -30,8 +30,6 @@ def validate_basket_json(basket_dict, schema, basket_address):
 
     #TODO: validate types for each key
 
-    return basket_dict
-
 def create_index_from_s3(root_dir, schema_path):
     """
     Recursively parse an s3 bucket and create an index using basket_manifest.json found therein
@@ -39,6 +37,15 @@ def create_index_from_s3(root_dir, schema_path):
     Parameters:
         root_dir: path to s3 bucket
         schema_path: path to json file that specifies structure of basket_manifest.json
+                    Currently the contents of this file just contain an array
+                    of the keys found in basket_manifest.json, such as 
+                    ["uuid", "upload_time", "parent_uuids", "basket_type", "label"]
+        
+    Returns:
+        index: a pandas DataFrame with columns
+                ["uuid", "upload_time", "parent_uuids", "basket_type", "label", "address", "storage_type"]
+                and where each row corresponds to a single basket_manifest.json
+                found recursively under specified root_dir
     """
     
     #check parameter data types
