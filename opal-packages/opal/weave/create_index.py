@@ -2,7 +2,10 @@
 USAGE:
 python create_index.py <root_dir> <schema_path>
     root_dir: the root directory of s3 you wish to build your index off of
-    schema_path: the path to a local json file that specifies basket keys
+    schema_path: the path to a local json file that specifies basket keys.
+                Currently the contents of this file just contain an array
+                of the keys found in basket_manifest.json, such as 
+                ["uuid", "upload_time", "parent_uuids", "basket_type", "label"]
 '''
 
 import json
@@ -25,7 +28,7 @@ def validate_basket_json(basket_dict, schema, basket_address):
     if list(basket_dict.keys()) != schema:
         raise ValueError(f'basket found at {basket_address} has invalid schema')
 
-    ########## validate types for each key
+    #TODO: validate types for each key
 
     return basket_dict
 
@@ -37,6 +40,14 @@ def create_index_from_s3(root_dir, schema_path):
         root_dir: path to s3 bucket
         schema_path: path to json file that specifies structure of basket_manifest.json
     """
+    
+    #check parameter data types
+    if not isinstance(root_dir, str):
+        raise TypeError(f"'root_dir' must be a string: '{root_dir}'")
+        
+    if not isinstance(schema_path, str):
+        raise TypeError(f"'schema_path' must be a string: '{schema_path}'")
+    
     opal_s3fs = opal.flow.minio_s3fs()
 
     basket_jsons = [x for x in opal_s3fs.find(root_dir) if x.endswith('basket_manifest.json')]

@@ -49,18 +49,28 @@ class TestCreateIndex():
         '''
         self.opal_s3fs.rm(f's3://{self.test_bucket}', recursive = True)
         self.temp_dir.cleanup()
+        
+    def test_root_dir_is_string(self):
+        with pytest.raises(TypeError, match =
+                           f"'root_dir' must be a string"):
+            create_index_from_s3(765,self.schema_path)
+            
+    def test_schema_path_is_string(self):
+        with pytest.raises(TypeError, match =
+                           f"'schema_path' must be a string"):
+            create_index_from_s3(f'{self.test_bucket}',4321)
 
     def test_correct_index(self):
         '''
         just use the data uploaded and create and index and check that it's right
         '''
-        truth_index_dict = {'uuid': ['1234'],
-                 'upload_time': [1679335295759652],
+        truth_index_dict = {'uuid': '1234',
+                 'upload_time': 1679335295759652,
                  'parent_uuids': [[1111, 2222]],
-                 'basket_type': ['test_basket_type'],
-                 'label': ['my label'],
-                 'address': ['s3://index-testing-bucket/test_basket_type/1234/basket_manifest.json'],
-                 'storage_type': ['s3']}
+                 'basket_type': 'test_basket_type',
+                 'label': 'my label',
+                 'address': 's3://index-testing-bucket/test_basket_type/1234/basket_manifest.json',
+                 'storage_type': 's3'}
         truth_index = pd.DataFrame(truth_index_dict)
 
         minio_index = create_index_from_s3(f'{self.test_bucket}',self.schema_path)
