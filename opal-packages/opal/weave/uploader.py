@@ -207,11 +207,6 @@ def upload_basket(upload_items,
         supplement_data['integrity_data'] = []
         
         for upload_item in upload_items:
-                    
-            for root, dirs, files in os.walk(upload_item['path']):
-                for name in files:
-                    print(os.path.join(root, name))
-                    print(name)
             if os.path.isdir(upload_item['path']):
                 for root, dirs, files in os.walk(upload_item['path']):
                     for name in files:
@@ -220,9 +215,9 @@ def upload_basket(upload_items,
                         file_integrity_data['local_path'] = local_path
                         if upload_item['stub'] == False:
                             file_integrity_data['stub'] = False
-                            file_upload_path = os.path.join(upload_path, os.path.basename(upload_item['path']))
+                            file_upload_path = os.path.join(upload_path, os.path.relpath(local_path, os.path.split(upload_item['path'])[0]))
                             file_integrity_data['upload_path'] = file_upload_path
-                            opal_s3fs.upload(upload_item['path'], file_upload_path)
+                            opal_s3fs.upload(local_path, file_upload_path)
                         else:
                             file_integrity_data['stub'] = True
                             file_integrity_data['upload_path'] = 'stub'

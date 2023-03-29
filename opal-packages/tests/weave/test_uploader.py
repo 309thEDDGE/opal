@@ -649,12 +649,12 @@ class TestUploadBasket():
         # Assert supplement.json fields
         with self.opal_s3fs.open(f's3://{upload_path}/basket_supplement.json', 'rb') as file:
             supplement_json = json.load(file)
-            upload_path = f"s3://{upload_path}/{os.path.basename(dir_path1)}/" \
-                          f"{os.path.basename(mid_dir_path)}/{os.path.basename(file_path3)}"
+            
+            test_upload_path = f"s3://{upload_path}/{os.path.basename(file_path1)}" 
             count = 0
             for integrity_data in supplement_json['integrity_data']:
                 if integrity_data['local_path'] == file_path1:
-                    assert integrity_data['upload_path'] == upload_path
+                    assert integrity_data['upload_path'] == test_upload_path
                     assert integrity_data['hash'] == 'c565fe03ca9b6242e01dfddefe9bba3d98b270e19cd02fd85ceaf75e2b25bf12'
                     assert integrity_data['file_size'] == 5
                     assert integrity_data['stub'] == False
@@ -665,10 +665,11 @@ class TestUploadBasket():
                 # Assert that the upload item exists in the list
                 assert count < len(supplement_json)
             
-            upload_path = f's3://{upload_path}/{os.path.basename(file_path2)}'
+            test_upload_path = f's3://{upload_path}/{os.path.basename(dir_path1)}/' \
+                          f'{os.path.basename(file_path2)}'
             for integrity_data in supplement_json['integrity_data']:
                 if integrity_data['local_path'] == file_path2:
-                    assert integrity_data['upload_path'] == upload_path
+                    assert integrity_data['upload_path'] == test_upload_path
                     assert integrity_data['hash'] == 'f8638b979b2f4f793ddb6dbd197e0ee25a7a6ea32b0ae22f5e3c5d119d839e75'
                     assert integrity_data['file_size'] == 4
                     assert integrity_data['stub'] == False
@@ -679,11 +680,11 @@ class TestUploadBasket():
                 # Assert that the upload item exists in the list
                 assert count < len(supplement_json)
 
-            upload_path = f's3://{upload_path}/{os.path.basename(dir_path1)}/' \
+            test_upload_path = f's3://{upload_path}/{os.path.basename(dir_path1)}/' \
                           f'{os.path.basename(mid_dir_path)}/{os.path.basename(file_path3)}'
             for integrity_data in supplement_json['integrity_data']:
                 if integrity_data['local_path'] == file_path3:
-                    assert integrity_data['upload_path'] == upload_path
+                    assert integrity_data['upload_path'] == test_upload_path
                     assert integrity_data['hash'] == 'e9a92a2ed0d53732ac13b031a27b071814231c8633c9f41844ccba884d482b16'
                     assert integrity_data['file_size'] == 7
                     assert integrity_data['stub'] == False
