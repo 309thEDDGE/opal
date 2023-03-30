@@ -56,6 +56,8 @@ def derive_integrity_data(file_path, byte_count = 10**8):
       'file_size': bytes (int),
       'hash': sha256 hash (string),
       'access_date': current date/time (string)
+      'source_path': path to the original source of data (string)
+      'byte_count': byte count used for generated checksum (int)
      }
 
     """
