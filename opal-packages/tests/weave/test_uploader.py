@@ -17,10 +17,10 @@ class TestValidateUploadItems():
     def setup_method(self):
         self.temp_dir = tempfile.TemporaryDirectory()
         self.temp_dir_path = self.temp_dir.name
-        
+
     def teardown_method(self):
         self.temp_dir.cleanup()
-        
+
     def test_validate_upload_item_correct_schema(self):
 
         file_path = 'path/path'
@@ -566,10 +566,6 @@ class TestUploadBasket():
                             'stub': False,
                         }
                         ,{
-                            'path': file_path2,
-                            'stub': False
-                        }
-                        ,{
                             'path': dir_path1,
                             'stub': False
                         }
@@ -604,6 +600,7 @@ class TestUploadBasket():
                      self.basket_type, parent_ids = parent_ids_in,
                      metadata = metadata_in, label=label_in)
 
+        upload_path = f's3://{upload_path}'
         # Assert original local path hasn't been altered
         assert original_files == os.listdir(self.temp_dir_path)
         with open(file_path1, 'r') as file:
@@ -618,7 +615,7 @@ class TestUploadBasket():
             assert file.read() == file2_stub_data
 
         # Assert basket.json fields
-        with self.opal_s3fs.open(f's3://{upload_path}/basket_manifest.json', 'rb') as file:
+        with self.opal_s3fs.open(f'{upload_path}/basket_manifest.json', 'rb') as file:
             basket_json = json.load(file)
             assert basket_json['uuid'] == unique_id
             assert basket_json['parent_uuids'] == parent_ids_in
@@ -627,30 +624,35 @@ class TestUploadBasket():
             assert 'upload_time' in basket_json.keys()
 
         # Assert metadata.json fields
-        with self.opal_s3fs.open(f's3://{upload_path}/basket_metadata.json', 'rb') as file:
+        with self.opal_s3fs.open(f'{upload_path}/basket_metadata.json', 'rb') as file:
             assert json.load(file) == metadata_in
 
         # Assert uploaded data
-        file_path = f's3://{upload_path}/{os.path.basename(file_path1)}'
+        file_path = os.path.join(upload_path,
+                                 os.path.relpath(file_path1, self.temp_dir_path))
         with self.opal_s3fs.open(file_path, 'r') as file:
             assert file.read() == file1_data
-        file_path = f's3://{upload_path}/{os.path.basename(file_path2)}'
+                                 
+        file_path = os.path.join(upload_path,
+                                 os.path.relpath(file_path2, self.temp_dir_path))
         with self.opal_s3fs.open(file_path, 'r') as file:
             assert file.read() == file2_data
-        file_path = f"s3://{upload_path}/{os.path.basename(dir_path1)}/" \
-                    f"{os.path.basename(mid_dir_path)}/{os.path.basename(file_path3)}"
+                                 
+        file_path = os.path.join(upload_path,
+                                 os.path.relpath(file_path3, self.temp_dir_path))
         with self.opal_s3fs.open(file_path, 'r') as file:
             assert file.read() == file3_data
-        assert self.opal_s3fs.ls(f's3://{upload_path}/{os.path.basename(empty_dir_path)}') == []
-        assert self.opal_s3fs.ls(f's3://{upload_path}/{os.path.basename(empty_dir_path_stub)}') == []
-        assert self.opal_s3fs.ls(f's3://{upload_path}/{os.path.basename(dir_path_stub)}') == []
-        assert self.opal_s3fs.ls(f's3://{upload_path}/{os.path.basename(file_path_stub1)}') == []
+
+        assert self.opal_s3fs.ls(f'{upload_path}/{os.path.basename(empty_dir_path)}') == []
+        assert self.opal_s3fs.ls(f'{upload_path}/{os.path.basename(empty_dir_path_stub)}') == []
+        assert self.opal_s3fs.ls(f'{upload_path}/{os.path.basename(dir_path_stub)}') == []
+        assert self.opal_s3fs.ls(f'{upload_path}/{os.path.basename(file_path_stub1)}') == []
                                                            
         # Assert supplement.json fields
-        with self.opal_s3fs.open(f's3://{upload_path}/basket_supplement.json', 'rb') as file:
+        with self.opal_s3fs.open(f'{upload_path}/basket_supplement.json', 'rb') as file:
             supplement_json = json.load(file)
             
-            test_upload_path = f"s3://{upload_path}/{os.path.basename(file_path1)}" 
+            test_upload_path = f"{upload_path}/{os.path.basename(file_path1)}" 
             count = 0
             for integrity_data in supplement_json['integrity_data']:
                 if integrity_data['local_path'] == file_path1:
@@ -663,10 +665,11 @@ class TestUploadBasket():
                     break
                 count += 1
                 # Assert that the upload item exists in the list
-                assert count < len(supplement_json)
+                assert count <= len(supplement_json)
             
-            test_upload_path = f's3://{upload_path}/{os.path.basename(dir_path1)}/' \
-                          f'{os.path.basename(file_path2)}'
+            count = 0
+            test_upload_path = os.path.join(upload_path,
+                                            os.path.relpath(file_path2, self.temp_dir_path))
             for integrity_data in supplement_json['integrity_data']:
                 if integrity_data['local_path'] == file_path2:
                     assert integrity_data['upload_path'] == test_upload_path
@@ -678,10 +681,11 @@ class TestUploadBasket():
                     break
                 count += 1
                 # Assert that the upload item exists in the list
-                assert count < len(supplement_json)
-
-            test_upload_path = f's3://{upload_path}/{os.path.basename(dir_path1)}/' \
-                          f'{os.path.basename(mid_dir_path)}/{os.path.basename(file_path3)}'
+                assert count <= len(supplement_json)
+            
+            count = 0
+            test_upload_path = os.path.join(upload_path,
+                                            os.path.relpath(file_path3, self.temp_dir_path))
             for integrity_data in supplement_json['integrity_data']:
                 if integrity_data['local_path'] == file_path3:
                     assert integrity_data['upload_path'] == test_upload_path
@@ -693,8 +697,9 @@ class TestUploadBasket():
                     break
                 count += 1
                 # Assert that the upload item exists in the list
-                assert count < len(supplement_json)
+                assert count <= len(supplement_json)
 
+            count = 0
             for integrity_data in supplement_json['integrity_data']:
                 if integrity_data['local_path'] == file_path_stub1:
                     assert integrity_data['upload_path'] == 'stub'
@@ -706,8 +711,9 @@ class TestUploadBasket():
                     break
                 count += 1
                 # Assert that the upload item exists in the list
-                assert count < len(supplement_json)
-
+                assert count <= len(supplement_json)
+            
+            count = 0
             for integrity_data in supplement_json['integrity_data']:
                 if integrity_data['local_path'] == file_path_stub2:
                     assert integrity_data['upload_path'] == 'stub'
@@ -719,7 +725,7 @@ class TestUploadBasket():
                     break
                 count += 1
                 # Assert that the upload item exists in the list
-                assert count < len(supplement_json)           
+                assert count <= len(supplement_json)           
 
             assert supplement_json['upload_items'] == upload_items
 

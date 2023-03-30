@@ -211,11 +211,16 @@ def upload_basket(upload_items,
                 for root, dirs, files in os.walk(upload_item['path']):
                     for name in files:
                         local_path = os.path.join(root, name)
+                        print('---localpath---')
+                        print(local_path)
                         file_integrity_data = derive_integrity_data(local_path)
                         file_integrity_data['local_path'] = local_path
                         if upload_item['stub'] == False:
                             file_integrity_data['stub'] = False
-                            file_upload_path = os.path.join(upload_path, os.path.relpath(local_path, os.path.split(upload_item['path'])[0]))
+                            file_upload_path = os.path.join(upload_path, 
+                                                            os.path.relpath(local_path, os.path.split(upload_item['path'])[0]))
+                            print('---file_upload_path---')
+                            print(file_upload_path)
                             file_integrity_data['upload_path'] = file_upload_path
                             opal_s3fs.upload(local_path, file_upload_path)
                         else:
@@ -228,6 +233,7 @@ def upload_basket(upload_items,
                 if upload_item['stub'] == False:
                     file_integrity_data['stub'] = False
                     file_upload_path = os.path.join(upload_path,os.path.basename(upload_item['path']))
+                    print('---file_upload_path---')
                     file_integrity_data['upload_path'] = file_upload_path
                     opal_s3fs.upload(upload_item['path'], file_upload_path)
                 else:
@@ -235,6 +241,8 @@ def upload_basket(upload_items,
                     file_integrity_data['upload_path'] = 'stub'
                 supplement_data['integrity_data'].append(file_integrity_data) 
 
+        print('---supplement_data---')
+        print(supplement_data)
         basket_json_path = os.path.join(temp_dir_path, 'basket_manifest.json')
         metadata_path = os.path.join(temp_dir_path, 'basket_metadata.json')
         supplement_json_path = os.path.join(temp_dir_path, 'basket_supplement.json')
