@@ -183,7 +183,7 @@ class TestDeriveIntegrityData():
     def test_derive_integrity_data_file_path(self):
         assert derive_integrity_data(self.file_path, 2)['file_path'] == self.file_path
         
-    def test_derive_integrity_bye_count(self):
+    def test_derive_integrity_byte_count(self):
         assert derive_integrity_data(self.file_path, 2)['byte_count'] == 2
         
     def test_derive_integrity_data_max_byte_count(self):

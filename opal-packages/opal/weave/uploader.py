@@ -94,7 +94,9 @@ def derive_integrity_data(file_path, byte_count = 10**6):
 
     return {'file_size': file_size,
             'hash': sha256_hash,
-            'access_date': datetime.now().strftime("%m/%d/%Y %H:%M:%S")}
+            'access_date': datetime.now().strftime("%m/%d/%Y %H:%M:%S"),
+            'file_path': file_path,
+            'byte_count': byte_count}
 
 def upload_basket(upload_items,
                  upload_directory,
