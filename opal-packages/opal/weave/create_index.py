@@ -73,7 +73,6 @@ def create_index_from_s3(root_dir, schema_path):
             validate_basket_dict(basket_dict, schema, basket_address)
             for field in basket_dict.keys():
                 index_dict[field].append(basket_dict[field])
-            #index_dict['uuid'] = index_dict['uuid'].astype(int64)
             index_dict['address'].append(basket_address)
             index_dict['storage_type'].append('s3')
 
