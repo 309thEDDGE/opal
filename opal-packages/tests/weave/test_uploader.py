@@ -180,8 +180,8 @@ class TestDeriveIntegrityData():
         diff_seconds = abs(access_date_seconds - now_seconds)
         assert diff_seconds < 60 
         
-    def test_derive_integrity_data_file_path(self):
-        assert derive_integrity_data(self.file_path, 2)['file_path'] == self.file_path
+    def test_derive_integrity_data_source_path(self):
+        assert derive_integrity_data(self.file_path, 2)['source_path'] == self.file_path
         
     def test_derive_integrity_byte_count(self):
         assert derive_integrity_data(self.file_path, 2)['byte_count'] == 2
@@ -611,7 +611,12 @@ class TestUploadBasket():
             assert basket_json['parent_uuids'] == parent_ids_in
             assert basket_json['basket_type'] == self.basket_type
             assert basket_json['label'] == label_in
-            assert 'upload_time' in basket_json.keys()
+            upload_time = basket_json['upload_time']
+            upload_time = datetime.strptime(upload_time, '%m/%d/%Y %H:%M:%S')
+            upload_time_seconds = upload_time.timestamp() 
+            now_seconds = time.time_ns() // 10**9
+            diff_seconds = abs(upload_time_seconds - now_seconds)
+            assert diff_seconds < 60 
 
         # Assert metadata.json fields
         with self.opal_s3fs.open(f'{upload_path}/basket_metadata.json', 'rb') as file:
@@ -659,12 +664,13 @@ class TestUploadBasket():
             test_upload_path = f"{upload_path}/{os.path.basename(file_path1)}" 
             count = 0
             for integrity_data in supplement_json['integrity_data']:
-                if integrity_data['local_path'] == file_path1:
+                if integrity_data['source_path'] == file_path1:
                     assert integrity_data['upload_path'] == test_upload_path
                     assert integrity_data['hash'] == 'c565fe03ca9b6242e01dfddefe9bba3d98b270e19cd02fd85ceaf75e2b25bf12'
                     assert integrity_data['file_size'] == 5
                     assert integrity_data['stub'] == False
-                    assert len(integrity_data.keys()) == 6
+                    assert len(integrity_data.keys()) == 7
+                    assert integrity_data['byte_count'] == 10**8
                     assert 'access_date' in integrity_data.keys()
                     break
                 count += 1
@@ -675,12 +681,13 @@ class TestUploadBasket():
             test_upload_path = os.path.join(upload_path,
                                             os.path.relpath(file_path2, self.temp_dir_path))
             for integrity_data in supplement_json['integrity_data']:
-                if integrity_data['local_path'] == file_path2:
+                if integrity_data['source_path'] == file_path2:
                     assert integrity_data['upload_path'] == test_upload_path
                     assert integrity_data['hash'] == 'f8638b979b2f4f793ddb6dbd197e0ee25a7a6ea32b0ae22f5e3c5d119d839e75'
                     assert integrity_data['file_size'] == 4
                     assert integrity_data['stub'] == False
-                    assert len(integrity_data.keys()) == 6
+                    assert len(integrity_data.keys()) == 7
+                    assert integrity_data['byte_count'] == 10**8
                     assert 'access_date' in integrity_data.keys()
                     break
                 count += 1
@@ -691,12 +698,13 @@ class TestUploadBasket():
             test_upload_path = os.path.join(upload_path,
                                             os.path.relpath(file_path3, self.temp_dir_path))
             for integrity_data in supplement_json['integrity_data']:
-                if integrity_data['local_path'] == file_path3:
+                if integrity_data['source_path'] == file_path3:
                     assert integrity_data['upload_path'] == test_upload_path
                     assert integrity_data['hash'] == 'e9a92a2ed0d53732ac13b031a27b071814231c8633c9f41844ccba884d482b16'
                     assert integrity_data['file_size'] == 7
                     assert integrity_data['stub'] == False
-                    assert len(integrity_data.keys()) == 6
+                    assert len(integrity_data.keys()) == 7
+                    assert integrity_data['byte_count'] == 10**8
                     assert 'access_date' in integrity_data.keys()
                     break
                 count += 1
@@ -707,12 +715,13 @@ class TestUploadBasket():
             test_upload_path = os.path.join(upload_path,
                                             os.path.relpath(file_path4, self.temp_dir_path))
             for integrity_data in supplement_json['integrity_data']:
-                if integrity_data['local_path'] == file_path4:
+                if integrity_data['source_path'] == file_path4:
                     assert integrity_data['upload_path'] == test_upload_path
                     assert integrity_data['hash'] == 'cd6f6854353f68f47c9c93217c5084bc66ea1af918ae1518a2d715a1885e1fcb'
                     assert integrity_data['file_size'] == 2
                     assert integrity_data['stub'] == False
-                    assert len(integrity_data.keys()) == 6
+                    assert len(integrity_data.keys()) == 7
+                    assert integrity_data['byte_count'] == 10**8
                     assert 'access_date' in integrity_data.keys()
                     break
                 count += 1
@@ -721,12 +730,13 @@ class TestUploadBasket():
 
             count = 0
             for integrity_data in supplement_json['integrity_data']:
-                if integrity_data['local_path'] == file_path_stub1:
+                if integrity_data['source_path'] == file_path_stub1:
                     assert integrity_data['upload_path'] == 'stub'
                     assert integrity_data['hash'] == 'e61b1cb2ee205f4abff78a06042921bae398587780f434e14677c12bd6288a3e'
                     assert integrity_data['file_size'] == 5
                     assert integrity_data['stub'] == True
-                    assert len(integrity_data.keys()) == 6
+                    assert len(integrity_data.keys()) == 7
+                    assert integrity_data['byte_count'] == 10**8
                     assert 'access_date' in integrity_data.keys()
                     break
                 count += 1
@@ -735,12 +745,13 @@ class TestUploadBasket():
             
             count = 0
             for integrity_data in supplement_json['integrity_data']:
-                if integrity_data['local_path'] == file_path_stub2:
+                if integrity_data['source_path'] == file_path_stub2:
                     assert integrity_data['upload_path'] == 'stub'
                     assert integrity_data['hash'] == '13615ecb0f24bab4cb4c20a7dc9cb3ef3fed6914e4750078493e722a8514e965'
                     assert integrity_data['file_size'] == 3
                     assert integrity_data['stub'] == True                    
-                    assert len(integrity_data.keys()) == 6
+                    assert len(integrity_data.keys()) == 7
+                    assert integrity_data['byte_count'] == 10**8
                     assert 'access_date' in integrity_data.keys()
                     break
                 count += 1

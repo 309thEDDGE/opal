@@ -29,7 +29,7 @@ def validate_upload_item(upload_item):
         raise FileExistsError(f"'path' does not exist: '{upload_item['path']}'")
     
 
-def derive_integrity_data(file_path, byte_count = 10**6):
+def derive_integrity_data(file_path, byte_count = 10**8):
     """
     Derive basic integrity data from a file.
 
@@ -96,7 +96,7 @@ def derive_integrity_data(file_path, byte_count = 10**6):
     return {'file_size': file_size,
             'hash': sha256_hash,
             'access_date': datetime.now().strftime("%m/%d/%Y %H:%M:%S"),
-            'file_path': file_path,
+            'source_path': file_path,
             'byte_count': byte_count}
 
 def upload_basket(upload_items,
@@ -218,7 +218,6 @@ def upload_basket(upload_items,
                     for name in files:
                         local_path = os.path.join(root, name)
                         file_integrity_data = derive_integrity_data(str(local_path))
-                        file_integrity_data['local_path'] = str(local_path)
                         if upload_item['stub'] == False:
                             file_integrity_data['stub'] = False
                             file_upload_path = os.path.join(upload_path, 
@@ -231,7 +230,6 @@ def upload_basket(upload_items,
                         supplement_data['integrity_data'].append(file_integrity_data)
             else:
                 file_integrity_data = derive_integrity_data(str(upload_item_path))
-                file_integrity_data['local_path'] = str(upload_item_path)
                 if upload_item['stub'] == False:
                     file_integrity_data['stub'] = False
                     file_upload_path = os.path.join(upload_path,os.path.basename(upload_item_path))
@@ -247,7 +245,7 @@ def upload_basket(upload_items,
         supplement_json_path = os.path.join(temp_dir_path, 'basket_supplement.json')
         basket_json = {}
         basket_json['uuid'] = unique_id
-        basket_json['upload_time'] = time.time_ns() // 1000
+        basket_json['upload_time'] = datetime.now().strftime("%m/%d/%Y %H:%M:%S")
         basket_json['parent_uuids'] = parent_ids
         basket_json['basket_type'] = basket_type
         basket_json['label'] = label
