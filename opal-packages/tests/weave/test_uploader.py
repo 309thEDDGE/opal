@@ -127,6 +127,10 @@ class TestDeriveIntegrityData():
     def setup_method(self):
         self.temp_dir = tempfile.TemporaryDirectory()
         self.temp_dir_path = self.temp_dir.name
+        self.file_path = os.path.join(self.temp_dir_path, 'file.txt')
+        file_data = '0123456789'
+        with open(self.file_path, "w") as outfile:
+            outfile.write(file_data)
 
     def teardown_method(self):
         self.temp_dir.cleanup()
@@ -143,82 +147,52 @@ class TestDeriveIntegrityData():
             derive_integrity_data(file_path)
 
     def test_derive_integrity_data_byte_count_string(self):
-        file_path = os.path.join(self.temp_dir_path, 'file.json')
-        json_data = {'t': [1,2,3]}
-        with open(file_path, "w") as outfile:
-            json.dump(json_data, outfile)
         byte_count_in = 'invalid byte count'
         with pytest.raises(TypeError, match = f"'byte_count' must be an int: '{byte_count_in}'"):
-            derive_integrity_data(file_path, byte_count = byte_count_in)
+            derive_integrity_data(self.file_path, byte_count = byte_count_in)
 
     def test_derive_integrity_data_byte_count_float(self):
-        file_path = os.path.join(self.temp_dir_path, 'file.json')
-        json_data = {'t': [1,2,3]}
-        with open(file_path, "w") as outfile:
-            json.dump(json_data, outfile)
         byte_count_in = 6.5
         with pytest.raises(TypeError, match = f"'byte_count' must be an int: '{byte_count_in}'"):
-            derive_integrity_data(file_path, byte_count = byte_count_in)
+            derive_integrity_data(self.file_path, byte_count = byte_count_in)
 
     def test_derive_integrity_data_byte_count_0(self):
-        file_path = os.path.join(self.temp_dir_path, 'file.json')
-        json_data = {'t': [1,2,3]}
-        with open(file_path, "w") as outfile:
-            json.dump(json_data, outfile)
         byte_count_in = 0
         with pytest.raises(ValueError, match = f"'byte_count' must be greater than zero: '{byte_count_in}'"):
-            derive_integrity_data(file_path, byte_count = byte_count_in)
+            derive_integrity_data(self.file_path, byte_count = byte_count_in)
 
     def test_derive_integrity_data_large_byte_count(self):
-        file_path = os.path.join(self.temp_dir_path, 'file.txt')
-        file_data = '0123456789'
-        with open(file_path, "w") as outfile:
-            outfile.write(file_data)
-
         assert '84d89877f0d4041efb6bf91a16f0248f2fd573e6af05c19f96bedb9f882f7882' == \
-        derive_integrity_data(file_path, 10**6)['hash']
+        derive_integrity_data(self.file_path, 10**6)['hash']
 
     def test_derive_integrity_data_small_byte_count(self):
-        file_path = os.path.join(self.temp_dir_path, 'file.txt')
-        file_data = '0123456789'
-        with open(file_path, "w") as outfile:
-            outfile.write(file_data)
-
         assert 'a2a7cb1d7fc8f79e33b716b328e19bb381c3ec96a2dca02a3d1183e7231413bb' == \
-        derive_integrity_data(file_path, 2)['hash']
+        derive_integrity_data(self.file_path, 2)['hash']
 
     def test_derive_integrity_data_file_size(self):
-        file_path = os.path.join(self.temp_dir_path, 'file.txt')
-        file_data = '0123456789'
-        with open(file_path, "w") as outfile:
-            outfile.write(file_data)
-
-        assert derive_integrity_data(file_path, 2)['file_size'] == 10
+        assert derive_integrity_data(self.file_path, 2)['file_size'] == 10
 
     def test_derive_integrity_data_date(self):
-        file_path = os.path.join(self.temp_dir_path, 'file.txt')
-        file_data = '0123456789'
-        with open(file_path, "w") as outfile:
-            outfile.write(file_data)
-
-        access_date = derive_integrity_data(file_path, 2)['access_date']
+        access_date = derive_integrity_data(self.file_path, 2)['access_date']
         access_date = datetime.strptime(access_date, '%m/%d/%Y %H:%M:%S')
         access_date_seconds = access_date.timestamp() 
         now_seconds = time.time_ns() // 10**9
         diff_seconds = abs(access_date_seconds - now_seconds)
         assert diff_seconds < 60 
         
+    def test_derive_integrity_data_file_path(self):
+        assert derive_integrity_data(self.file_path, 2)['file_path'] == self.file_path
+        
+    def test_derive_integrity_bye_count(self):
+        assert derive_integrity_data(self.file_path, 2)['byte_count'] == 2
+        
     def test_derive_integrity_data_max_byte_count(self):
-        file_path = os.path.join(self.temp_dir_path, 'file.json')
-        json_data = {'t': [1,2,3]}
-        with open(file_path, "w") as outfile:
-            json.dump(json_data, outfile)
         byte_count_in = 300 * 10**6 + 1
         with pytest.raises(ValueError, match = f"'byte_count' must be less "
                          f"than or equal to 300000000 bytes: '{byte_count_in}'"):
-            derive_integrity_data(file_path, byte_count = byte_count_in)
+            derive_integrity_data(self.file_path, byte_count = byte_count_in)
         
-        derive_integrity_data(file_path, byte_count = (byte_count_in - 1))
+        derive_integrity_data(self.file_path, byte_count = (byte_count_in - 1))
         
 
 class TestUploadBasket():
@@ -672,6 +646,8 @@ class TestUploadBasket():
                                             os.path.relpath(file_path2, self.temp_dir_path))
             for integrity_data in supplement_json['integrity_data']:
                 if integrity_data['local_path'] == file_path2:
+                    print(integrity_data['upload_path'])
+                    print(test_upload_path)
                     assert integrity_data['upload_path'] == test_upload_path
                     assert integrity_data['hash'] == 'f8638b979b2f4f793ddb6dbd197e0ee25a7a6ea32b0ae22f5e3c5d119d839e75'
                     assert integrity_data['file_size'] == 4
