@@ -33,8 +33,13 @@ class TestCreateIndex():
         with open(file_path, "w") as f:
             f.write('this is a test file')
 
+        #upload basket 2 levels deep
         upload_basket(self.local_dir_path, f'{self.test_bucket}/{self.basket_type}/1234', 1234,
                       self.basket_type, [1111,2222], label = 'my label')
+        
+        #upload basket 3 levels deeps
+        upload_basket(self.local_dir_path, f'{self.test_bucket}/{self.basket_type}/one_deeper/4321', 4321,
+                      self.basket_type, [333,444], label = 'my label')
 
         #make schema.json for testing purposes
         self.schema_path = os.path.join(self.local_dir_path, 'schema.json')
@@ -64,12 +69,13 @@ class TestCreateIndex():
         '''
         just use the data uploaded and create and index and check that it's right
         '''
-        truth_index_dict = {'uuid': '1234',
-                 'upload_time': 1679335295759652,
-                 'parent_uuids': [[1111, 2222]],
+        truth_index_dict = {'uuid': ['1234', '4321'],
+                 'upload_time': [1679335295759652, 1234567890],
+                 'parent_uuids': [[1111, 2222], [333,444]],
                  'basket_type': 'test_basket_type',
                  'label': 'my label',
-                 'address': 's3://index-testing-bucket/test_basket_type/1234/basket_manifest.json',
+                 'address': [f's3://{self.test_bucket}/{self.basket_type}/1234/basket_manifest.json',
+                             f's3://{self.test_bucket}/{self.basket_type}/one_deeper/4321/basket_manifest.json'],
                  'storage_type': 's3'}
         truth_index = pd.DataFrame(truth_index_dict)
 
