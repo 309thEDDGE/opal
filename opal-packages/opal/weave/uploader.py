@@ -6,6 +6,7 @@ import s3fs
 import hashlib
 import math
 from datetime import datetime
+from pathlib import Path
 
 def validate_upload_item(upload_item):
     
@@ -143,7 +144,6 @@ def upload_basket(upload_items,
     label: optional str,
         Optional user friendly label associated with the basket 
     """
-    
     kwargs_schema = {'test_clean_up': bool}
     for key, value in kwargs.items():
         if key not in kwargs_schema.keys():
@@ -161,9 +161,12 @@ def upload_basket(upload_items,
         
     # Validate upload_items
     local_path_basenames = []
+    unallowed_filenames = ['basket_manifest.json', 'basket_metadata.json', 'basket_supplement.json']
     for upload_item in upload_items:
         validate_upload_item(upload_item)
         local_path_basename = os.path.basename(upload_item['path'])
+        if local_path_basename in unallowed_filenames:
+            raise ValueError(f"'{local_path_basename}' filename not allowed")
         # Check for duplicate file/folder names
         if local_path_basename in local_path_basenames:
             raise ValueError(f"'upload_item' folder and file names must be unique:"
@@ -207,42 +210,36 @@ def upload_basket(upload_items,
         supplement_data['integrity_data'] = []
         
         for upload_item in upload_items:
-            if os.path.isdir(upload_item['path']):
-                for root, dirs, files in os.walk(upload_item['path']):
+            upload_item_path = Path(upload_item['path'])
+            if upload_item_path.is_dir():
+                for root, dirs, files in os.walk(upload_item_path):
                     for name in files:
                         local_path = os.path.join(root, name)
-                        print('---localpath---')
-                        print(local_path)
-                        file_integrity_data = derive_integrity_data(local_path)
-                        file_integrity_data['local_path'] = local_path
+                        file_integrity_data = derive_integrity_data(str(local_path))
+                        file_integrity_data['local_path'] = str(local_path)
                         if upload_item['stub'] == False:
                             file_integrity_data['stub'] = False
                             file_upload_path = os.path.join(upload_path, 
-                                                            os.path.relpath(local_path, os.path.split(upload_item['path'])[0]))
-                            print('---file_upload_path---')
-                            print(file_upload_path)
-                            file_integrity_data['upload_path'] = file_upload_path
+                                                            os.path.relpath(local_path, os.path.split(upload_item_path)[0]))
+                            file_integrity_data['upload_path'] = str(file_upload_path)
                             opal_s3fs.upload(local_path, file_upload_path)
                         else:
                             file_integrity_data['stub'] = True
                             file_integrity_data['upload_path'] = 'stub'
                         supplement_data['integrity_data'].append(file_integrity_data)
             else:
-                file_integrity_data = derive_integrity_data(upload_item['path'])
-                file_integrity_data['local_path'] = upload_item['path']
+                file_integrity_data = derive_integrity_data(str(upload_item_path))
+                file_integrity_data['local_path'] = str(upload_item_path)
                 if upload_item['stub'] == False:
                     file_integrity_data['stub'] = False
-                    file_upload_path = os.path.join(upload_path,os.path.basename(upload_item['path']))
-                    print('---file_upload_path---')
-                    file_integrity_data['upload_path'] = file_upload_path
-                    opal_s3fs.upload(upload_item['path'], file_upload_path)
+                    file_upload_path = os.path.join(upload_path,os.path.basename(upload_item_path))
+                    file_integrity_data['upload_path'] = str(file_upload_path)
+                    opal_s3fs.upload(str(upload_item_path), file_upload_path)
                 else:
                     file_integrity_data['stub'] = True
                     file_integrity_data['upload_path'] = 'stub'
                 supplement_data['integrity_data'].append(file_integrity_data) 
 
-        print('---supplement_data---')
-        print(supplement_data)
         basket_json_path = os.path.join(temp_dir_path, 'basket_manifest.json')
         metadata_path = os.path.join(temp_dir_path, 'basket_metadata.json')
         supplement_json_path = os.path.join(temp_dir_path, 'basket_supplement.json')
@@ -257,8 +254,7 @@ def upload_basket(upload_items,
             json.dump(basket_json, outfile)
             
         opal_s3fs.upload(basket_json_path, os.path.join(upload_path,'basket_manifest.json'))
-        
-        # opal_s3fs.upload(local_dir_path, upload_path, recursive=True)
+
         if metadata != {}:
             with open(metadata_path, "w") as outfile:
                 json.dump(metadata, outfile)

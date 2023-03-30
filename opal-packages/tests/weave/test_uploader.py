@@ -538,6 +538,16 @@ class TestUploadBasket():
         with open(file_path3, "w") as outfile:
             outfile.write(file3_data)
             
+        # One non stub directory with slash on end and one file at the base
+        dir_path2 = self.temp_dir_path + '/directory_name2/'
+        os.mkdir(dir_path2)
+
+        file_path4 = os.path.join(dir_path2, 'file4.txt')
+        file4_data = 'HI'
+        
+        with open(file_path4, "w") as outfile:
+            outfile.write(file4_data)
+            
         # One non stub directory without a file
         empty_dir_path = os.path.join(self.temp_dir_path, 'empty_directory')
         os.mkdir(empty_dir_path)
@@ -551,7 +561,7 @@ class TestUploadBasket():
         # one stub directory with a file
         dir_path_stub = os.path.join(self.temp_dir_path, 'directory_stub')
         os.mkdir(dir_path_stub)
-        file_path_stub2 = os.path.join(self.temp_dir_path, 'filestub2.txt')
+        file_path_stub2 = os.path.join(dir_path_stub, 'filestub2.txt')
         file2_stub_data = 'OPQ'
         with open(file_path_stub2, "w") as outfile:
             outfile.write(file2_stub_data)
@@ -567,6 +577,10 @@ class TestUploadBasket():
                         }
                         ,{
                             'path': dir_path1,
+                            'stub': False
+                        }
+                        ,{
+                            'path': dir_path2,
                             'stub': False
                         }
                         ,{
@@ -609,6 +623,8 @@ class TestUploadBasket():
             assert file.read() == file2_data
         with open(file_path3, 'r') as file:
             assert file.read() == file3_data
+        with open(file_path4, 'r') as file:
+            assert file.read() == file4_data
         with open(file_path_stub1, 'r') as file:
             assert file.read() == file1_stub_data
         with open(file_path_stub2, 'r') as file:
@@ -642,10 +658,24 @@ class TestUploadBasket():
                                  os.path.relpath(file_path3, self.temp_dir_path))
         with self.opal_s3fs.open(file_path, 'r') as file:
             assert file.read() == file3_data
+            
+        file_path = os.path.join(upload_path,
+                                 os.path.relpath(file_path4, self.temp_dir_path))
+        with self.opal_s3fs.open(file_path, 'r') as file:
+            assert file.read() == file4_data
 
-        assert self.opal_s3fs.ls(f'{upload_path}/{os.path.basename(empty_dir_path)}') == []
-        assert self.opal_s3fs.ls(f'{upload_path}/{os.path.basename(empty_dir_path_stub)}') == []
-        assert self.opal_s3fs.ls(f'{upload_path}/{os.path.basename(dir_path_stub)}') == []
+        test_upload_path = f'{upload_path}/{os.path.basename(empty_dir_path)}'
+        assert self.opal_s3fs.ls(test_upload_path) == []
+        assert os.path.relpath(test_upload_path, 's3://') not in self.opal_s3fs.ls(upload_path)
+        
+        test_upload_path = f'{upload_path}/{os.path.basename(empty_dir_path_stub)}'
+        assert self.opal_s3fs.ls(test_upload_path) == []
+        assert os.path.relpath(test_upload_path, 's3://') not in self.opal_s3fs.ls(upload_path)
+        
+        test_upload_path = f'{upload_path}/{os.path.basename(dir_path_stub)}'
+        assert self.opal_s3fs.ls(test_upload_path) == []
+        assert os.path.relpath(test_upload_path, 's3://') not in self.opal_s3fs.ls(upload_path)
+          
         assert self.opal_s3fs.ls(f'{upload_path}/{os.path.basename(file_path_stub1)}') == []
                                                            
         # Assert supplement.json fields
@@ -665,7 +695,7 @@ class TestUploadBasket():
                     break
                 count += 1
                 # Assert that the upload item exists in the list
-                assert count <= len(supplement_json)
+                assert count < len(supplement_json['integrity_data'])
             
             count = 0
             test_upload_path = os.path.join(upload_path,
@@ -681,7 +711,7 @@ class TestUploadBasket():
                     break
                 count += 1
                 # Assert that the upload item exists in the list
-                assert count <= len(supplement_json)
+                assert count < len(supplement_json['integrity_data'])
             
             count = 0
             test_upload_path = os.path.join(upload_path,
@@ -697,7 +727,23 @@ class TestUploadBasket():
                     break
                 count += 1
                 # Assert that the upload item exists in the list
-                assert count <= len(supplement_json)
+                assert count < len(supplement_json['integrity_data'])
+                
+            count = 0
+            test_upload_path = os.path.join(upload_path,
+                                            os.path.relpath(file_path4, self.temp_dir_path))
+            for integrity_data in supplement_json['integrity_data']:
+                if integrity_data['local_path'] == file_path4:
+                    assert integrity_data['upload_path'] == test_upload_path
+                    assert integrity_data['hash'] == 'cd6f6854353f68f47c9c93217c5084bc66ea1af918ae1518a2d715a1885e1fcb'
+                    assert integrity_data['file_size'] == 2
+                    assert integrity_data['stub'] == False
+                    assert len(integrity_data.keys()) == 6
+                    assert 'access_date' in integrity_data.keys()
+                    break
+                count += 1
+                # Assert that the upload item exists in the list
+                assert count < len(supplement_json['integrity_data'])
 
             count = 0
             for integrity_data in supplement_json['integrity_data']:
@@ -711,7 +757,7 @@ class TestUploadBasket():
                     break
                 count += 1
                 # Assert that the upload item exists in the list
-                assert count <= len(supplement_json)
+                assert count < len(supplement_json['integrity_data'])
             
             count = 0
             for integrity_data in supplement_json['integrity_data']:
@@ -719,13 +765,13 @@ class TestUploadBasket():
                     assert integrity_data['upload_path'] == 'stub'
                     assert integrity_data['hash'] == '13615ecb0f24bab4cb4c20a7dc9cb3ef3fed6914e4750078493e722a8514e965'
                     assert integrity_data['file_size'] == 3
-                    assert integrity_data['stub'] == False                    
+                    assert integrity_data['stub'] == True                    
                     assert len(integrity_data.keys()) == 6
                     assert 'access_date' in integrity_data.keys()
                     break
                 count += 1
                 # Assert that the upload item exists in the list
-                assert count <= len(supplement_json)           
+                assert count < len(supplement_json['integrity_data'])           
 
             assert supplement_json['upload_items'] == upload_items
 
@@ -778,6 +824,31 @@ class TestUploadBasket():
             upload_basket(upload_items, upload_path, unique_id, self.basket_type)
 
         assert self.opal_s3fs.ls(f's3://{self.basket_path}') == [upload_path]
+        
+    def test_upload_basket_check_unallowed_file_names(self):
+        unallowed_file_names = ['basket_manifest.json', 'basket_metadata.json', 'basket_supplement.json']
+        for unallowed_file_name in unallowed_file_names:
+            # Create basket
+            local_dir_path = self.temp_dir_path
+            json_path = os.path.join(local_dir_path, unallowed_file_name)
+            json_data = {'t': [1,2,3]}
+            with open(json_path, "w") as outfile:
+                json.dump(json_data, outfile)
+
+            upload_items = [{
+                                'path': json_path,
+                                'stub': False,
+                            }]
+
+            # Run upload_basket
+            unique_id = uuid.uuid1().int
+            upload_path = f"{self.basket_path}/{unique_id}"
+
+            with pytest.raises(ValueError,
+                               match = f"'{unallowed_file_name}' filename not allowed"):
+                upload_basket(upload_items, upload_path, unique_id, self.basket_type)
+
+        assert self.opal_s3fs.ls(f's3://{self.basket_path}') == []
 
     def test_upload_basket_invalid_upload_path(self):
         local_dir_path = self.temp_dir_path
