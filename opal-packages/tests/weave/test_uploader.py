@@ -646,8 +646,6 @@ class TestUploadBasket():
                                             os.path.relpath(file_path2, self.temp_dir_path))
             for integrity_data in supplement_json['integrity_data']:
                 if integrity_data['local_path'] == file_path2:
-                    print(integrity_data['upload_path'])
-                    print(test_upload_path)
                     assert integrity_data['upload_path'] == test_upload_path
                     assert integrity_data['hash'] == 'f8638b979b2f4f793ddb6dbd197e0ee25a7a6ea32b0ae22f5e3c5d119d839e75'
                     assert integrity_data['file_size'] == 4
