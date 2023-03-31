@@ -19,7 +19,7 @@ def upload(upload_items,
         raise TypeError(f"'upload_items' must be a list of dictionaries: '{upload_items}'")
         
     if not isinstance(bucket_name, str):
-        raise TypeError(f"'basket_type' must be a string: '{bucket_name}'")
+        raise TypeError(f"'bucket_name' must be a string: '{bucket_name}'")
         
     if not isinstance(basket_type, str):
         raise TypeError(f"'basket_type' must be a string: '{basket_type}'")
