@@ -477,7 +477,173 @@ class TestUploadBasket():
 
         assert self.opal_s3fs.ls(f's3://{self.basket_path}') == []
 
-    def test_upload_basket_successful_run(self):
+    def test_upload_basket_no_metadata(self):
+        # Create basket
+        local_dir_path = self.temp_dir_path
+        json_path = os.path.join(local_dir_path, "sample.json")
+        json_data = {'t': [1,2,3]}
+        with open(json_path, "w") as outfile:
+            json.dump(json_data, outfile)
+            
+        upload_items = [{
+                            'path': local_dir_path,
+                            'stub': True,
+                        }]
+
+        # Run upload_basket
+        unique_id = uuid.uuid1().int
+        upload_path = f"{self.basket_path}/{unique_id}"
+
+        upload_basket(upload_items, upload_path, unique_id,
+                     self.basket_type)
+
+        # Assert metadata.json was not written
+        assert self.opal_s3fs.ls(f's3://{upload_path}/metadata.json') == []
+
+    def test_upload_basket_check_existing_upload_path(self):
+        # Create basket
+        local_dir_path = self.temp_dir_path
+        json_path = os.path.join(local_dir_path, "sample.json")
+        json_data = {'t': [1,2,3]}
+        with open(json_path, "w") as outfile:
+            json.dump(json_data, outfile)
+            
+        upload_items = [{
+                            'path': local_dir_path,
+                            'stub': True,
+                        }]
+
+        # Run upload_basket
+        unique_id = uuid.uuid1().int
+        upload_path = f"{self.basket_path}/{unique_id}"
+
+        self.opal_s3fs.upload(local_dir_path,
+                         f's3://{upload_path}', 
+                         recursive = True)
+
+        with pytest.raises(FileExistsError,
+                           match = f"'upload_directory' already exists: '{upload_path}''"):
+            upload_basket(upload_items, upload_path, unique_id, self.basket_type)
+
+        assert self.opal_s3fs.ls(f's3://{self.basket_path}') == [upload_path]
+        
+    def test_upload_basket_check_unallowed_file_names(self):
+        unallowed_file_names = ['basket_manifest.json', 'basket_metadata.json', 'basket_supplement.json']
+        for unallowed_file_name in unallowed_file_names:
+            # Create basket
+            local_dir_path = self.temp_dir_path
+            json_path = os.path.join(local_dir_path, unallowed_file_name)
+            json_data = {'t': [1,2,3]}
+            with open(json_path, "w") as outfile:
+                json.dump(json_data, outfile)
+
+            upload_items = [{
+                                'path': json_path,
+                                'stub': False,
+                            }]
+
+            # Run upload_basket
+            unique_id = uuid.uuid1().int
+            upload_path = f"{self.basket_path}/{unique_id}"
+
+            with pytest.raises(ValueError,
+                               match = f"'{unallowed_file_name}' filename not allowed"):
+                upload_basket(upload_items, upload_path, unique_id, self.basket_type)
+
+        assert self.opal_s3fs.ls(f's3://{self.basket_path}') == []
+
+    def test_upload_basket_invalid_upload_path(self):
+        local_dir_path = self.temp_dir_path
+        json_path = os.path.join(local_dir_path, "sample.json")
+        json_data = {'t': [1,2,3]}
+        with open(json_path, "w") as outfile:
+            json.dump(json_data, outfile)
+            
+        upload_items = [{
+                            'path': local_dir_path,
+                            'stub': True,
+                        }]
+        unique_id = uuid.uuid1().int
+        upload_path = ";invalid_path"
+
+        with pytest.raises(botocore.exceptions.ParamValidationError,
+                           match = f"Invalid bucket name"):
+            upload_basket(upload_items, upload_path,
+                         unique_id, self.basket_type)
+
+        assert self.opal_s3fs.ls(f's3://{self.basket_path}') == []
+
+    def test_upload_basket_clean_up_on_error(self):
+        local_dir_path = self.temp_dir_path
+        json_path = os.path.join(local_dir_path, "sample.json")
+        json_data = {'t': [1,2,3]}
+        with open(json_path, "w") as outfile:
+            json.dump(json_data, outfile)
+            
+        upload_items = [{
+                            'path': local_dir_path,
+                            'stub': True,
+                        }]
+
+        # Run upload_basket
+        unique_id = uuid.uuid1().int
+        upload_path = f"{self.basket_path}/{unique_id}"
+
+        with pytest.raises(Exception,
+                           match = "Test Clean Up"):
+            upload_basket(upload_items, upload_path,
+                          unique_id, self.basket_type,
+                         test_clean_up = True)
+
+        assert self.opal_s3fs.ls(f's3://{self.basket_path}') == []
+        
+    def test_upload_basket_invalid_optional_argument(self):
+        local_dir_path = self.temp_dir_path
+        json_path = os.path.join(local_dir_path, "sample.json")
+        json_data = {'t': [1,2,3]}
+        with open(json_path, "w") as outfile:
+            json.dump(json_data, outfile)
+            
+        upload_items = [{
+                            'path': local_dir_path,
+                            'stub': True,
+                        }]
+        unique_id = uuid.uuid1().int
+        upload_path = f"{self.basket_path}/{unique_id}"
+        invalid_arg = 'invalid_arg'
+        
+        with pytest.raises(KeyError,
+                           match = "Invalid kwargs argument: 'junk'"):
+            upload_basket(upload_items, upload_path,
+                         unique_id, self.basket_type,
+                         junk = True)
+
+        assert self.opal_s3fs.ls(f's3://{self.basket_path}') == []
+
+    def test_upload_basket_invalid_test_clean_up_datatype(self):
+        local_dir_path = self.temp_dir_path
+        json_path = os.path.join(local_dir_path, "sample.json")
+        json_data = {'t': [1,2,3]}
+        with open(json_path, "w") as outfile:
+            json.dump(json_data, outfile)
+            
+        upload_items = [{
+                            'path': local_dir_path,
+                            'stub': True,
+                        }]
+        unique_id = uuid.uuid1().int
+        upload_path = f"{self.basket_path}/{unique_id}"
+        invalid_arg = 'invalid_arg'
+
+        with pytest.raises(TypeError,
+                           match = f"Invalid datatype: 'test_clean_up: must be type <class \'bool\'>'"):
+            upload_basket(upload_items, upload_path,
+                         unique_id, self.basket_type,
+                         test_clean_up = 'a')
+
+        assert self.opal_s3fs.ls(f's3://{self.basket_path}') == []        
+        
+    def test_upload_basket_end_to_end_test(self):
         unique_id = uuid.uuid1().int
         upload_path = f"{self.basket_path}/{unique_id}"
         
@@ -752,169 +918,3 @@ class TestUploadBasket():
                 assert count < len(supplement_json['integrity_data'])           
 
             assert supplement_json['upload_items'] == upload_items
-
-    def test_upload_basket_no_metadata(self):
-        # Create basket
-        local_dir_path = self.temp_dir_path
-        json_path = os.path.join(local_dir_path, "sample.json")
-        json_data = {'t': [1,2,3]}
-        with open(json_path, "w") as outfile:
-            json.dump(json_data, outfile)
-            
-        upload_items = [{
-                            'path': local_dir_path,
-                            'stub': True,
-                        }]
-
-        # Run upload_basket
-        unique_id = uuid.uuid1().int
-        upload_path = f"{self.basket_path}/{unique_id}"
-
-        upload_basket(upload_items, upload_path, unique_id,
-                     self.basket_type)
-
-        # Assert metadata.json was not written
-        assert self.opal_s3fs.ls(f's3://{upload_path}/metadata.json') == []
-
-    def test_upload_basket_check_existing_upload_path(self):
-        # Create basket
-        local_dir_path = self.temp_dir_path
-        json_path = os.path.join(local_dir_path, "sample.json")
-        json_data = {'t': [1,2,3]}
-        with open(json_path, "w") as outfile:
-            json.dump(json_data, outfile)
-            
-        upload_items = [{
-                            'path': local_dir_path,
-                            'stub': True,
-                        }]
-
-        # Run upload_basket
-        unique_id = uuid.uuid1().int
-        upload_path = f"{self.basket_path}/{unique_id}"
-
-        self.opal_s3fs.upload(local_dir_path,
-                         f's3://{upload_path}', 
-                         recursive = True)
-
-        with pytest.raises(FileExistsError,
-                           match = f"'upload_directory' already exists: '{upload_path}''"):
-            upload_basket(upload_items, upload_path, unique_id, self.basket_type)
-
-        assert self.opal_s3fs.ls(f's3://{self.basket_path}') == [upload_path]
-        
-    def test_upload_basket_check_unallowed_file_names(self):
-        unallowed_file_names = ['basket_manifest.json', 'basket_metadata.json', 'basket_supplement.json']
-        for unallowed_file_name in unallowed_file_names:
-            # Create basket
-            local_dir_path = self.temp_dir_path
-            json_path = os.path.join(local_dir_path, unallowed_file_name)
-            json_data = {'t': [1,2,3]}
-            with open(json_path, "w") as outfile:
-                json.dump(json_data, outfile)
-
-            upload_items = [{
-                                'path': json_path,
-                                'stub': False,
-                            }]
-
-            # Run upload_basket
-            unique_id = uuid.uuid1().int
-            upload_path = f"{self.basket_path}/{unique_id}"
-
-            with pytest.raises(ValueError,
-                               match = f"'{unallowed_file_name}' filename not allowed"):
-                upload_basket(upload_items, upload_path, unique_id, self.basket_type)
-
-        assert self.opal_s3fs.ls(f's3://{self.basket_path}') == []
-
-    def test_upload_basket_invalid_upload_path(self):
-        local_dir_path = self.temp_dir_path
-        json_path = os.path.join(local_dir_path, "sample.json")
-        json_data = {'t': [1,2,3]}
-        with open(json_path, "w") as outfile:
-            json.dump(json_data, outfile)
-            
-        upload_items = [{
-                            'path': local_dir_path,
-                            'stub': True,
-                        }]
-        unique_id = uuid.uuid1().int
-        upload_path = ";invalid_path"
-
-        with pytest.raises(botocore.exceptions.ParamValidationError,
-                           match = f"Invalid bucket name"):
-            upload_basket(upload_items, upload_path,
-                         unique_id, self.basket_type)
-
-        assert self.opal_s3fs.ls(f's3://{self.basket_path}') == []
-
-    def test_upload_basket_clean_up_on_error(self):
-        local_dir_path = self.temp_dir_path
-        json_path = os.path.join(local_dir_path, "sample.json")
-        json_data = {'t': [1,2,3]}
-        with open(json_path, "w") as outfile:
-            json.dump(json_data, outfile)
-            
-        upload_items = [{
-                            'path': local_dir_path,
-                            'stub': True,
-                        }]
-
-        # Run upload_basket
-        unique_id = uuid.uuid1().int
-        upload_path = f"{self.basket_path}/{unique_id}"
-
-        with pytest.raises(Exception,
-                           match = "Test Clean Up"):
-            upload_basket(upload_items, upload_path,
-                          unique_id, self.basket_type,
-                         test_clean_up = True)
-
-        assert self.opal_s3fs.ls(f's3://{self.basket_path}') == []
-        
-    def test_upload_basket_invalid_optional_argument(self):
-        local_dir_path = self.temp_dir_path
-        json_path = os.path.join(local_dir_path, "sample.json")
-        json_data = {'t': [1,2,3]}
-        with open(json_path, "w") as outfile:
-            json.dump(json_data, outfile)
-            
-        upload_items = [{
-                            'path': local_dir_path,
-                            'stub': True,
-                        }]
-        unique_id = uuid.uuid1().int
-        upload_path = f"{self.basket_path}/{unique_id}"
-        invalid_arg = 'invalid_arg'
-        
-        with pytest.raises(KeyError,
-                           match = "Invalid kwargs argument: 'junk'"):
-            upload_basket(upload_items, upload_path,
-                         unique_id, self.basket_type,
-                         junk = True)
-
-        assert self.opal_s3fs.ls(f's3://{self.basket_path}') == []
-
-    def test_upload_basket_invalid_test_clean_up_datatype(self):
-        local_dir_path = self.temp_dir_path
-        json_path = os.path.join(local_dir_path, "sample.json")
-        json_data = {'t': [1,2,3]}
-        with open(json_path, "w") as outfile:
-            json.dump(json_data, outfile)
-            
-        upload_items = [{
-                            'path': local_dir_path,
-                            'stub': True,
-                        }]
-        unique_id = uuid.uuid1().int
-        upload_path = f"{self.basket_path}/{unique_id}"
-        invalid_arg = 'invalid_arg'
-
-        with pytest.raises(TypeError,
-                           match = f"Invalid datatype: 'test_clean_up: must be type <class \'bool\'>'"):
-            upload_basket(upload_items, upload_path,
-                         unique_id, self.basket_type,
-                         test_clean_up = 'a')
-
-        assert self.opal_s3fs.ls(f's3://{self.basket_path}') == []
