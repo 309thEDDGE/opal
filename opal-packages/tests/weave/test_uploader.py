@@ -17,8 +17,6 @@ class TestValidateUploadItems():
     def setup_method(self):
         self.temp_dir = tempfile.TemporaryDirectory()
         self.temp_dir_path = self.temp_dir.name
-        self.expected_schema = {'path': str,
-                                'stub': bool}
 
     def teardown_method(self):
         self.temp_dir.cleanup()
