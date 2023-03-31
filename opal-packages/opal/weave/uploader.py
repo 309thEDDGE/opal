@@ -155,18 +155,18 @@ def upload_basket(upload_items,
         the data itself. This is especially useful when dealing with large files.
     upload_directory: str
         MinIO path where basket is to be uploaded.
-    unique_id: int
+    unique_id: str
         Unique ID to identify the basket once uploaded.
     basket_type: str
-        Type of basket being uploaded
-    parent_ids: optional [int]
+        Type of basket being uploaded.
+    parent_ids: optional [str]
         List of unique ids associated with the parent baskets
-        used to derive the new basket being uploaded
+        used to derive the new basket being uploaded.
     metadata: optional dict,
         Python dictionary that will be written to metadata.json
-        and stored in the basket in MinIO
+        and stored in the basket in MinIO.
     label: optional str,
-        Optional user friendly label associated with the basket 
+        Optional user friendly label associated with the basket.
     """
     kwargs_schema = {'test_clean_up': bool}
     for key, value in kwargs.items():
@@ -201,17 +201,17 @@ def upload_basket(upload_items,
     if not isinstance(upload_directory, str):
         raise TypeError(f"'upload_directory' must be a string: '{upload_directory}'")
 
-    if not isinstance(unique_id, int):
-        raise TypeError(f"'unique_id' must be an int: '{unique_id}'")
+    if not isinstance(unique_id, str):
+        raise TypeError(f"'unique_id' must be a string: '{unique_id}'")
 
     if not isinstance(basket_type, str):
         raise TypeError(f"'basket_type' must be a string: '{basket_type}'")
 
     if not isinstance(parent_ids, list):
-        raise TypeError(f"'parent_ids' must be a list of int: '{parent_ids}'")
+        raise TypeError(f"'parent_ids' must be a list of strings: '{parent_ids}'")
 
-    if not all(isinstance(x, int) for x in parent_ids):
-        raise TypeError(f"'parent_ids' must be a list of int: '{parent_ids}'")
+    if not all(isinstance(x, str) for x in parent_ids):
+        raise TypeError(f"'parent_ids' must be a list of strings: '{parent_ids}'")
 
     if not isinstance(metadata, dict):
         raise TypeError(f"'metadata' must be a dictionary: '{metadata}'")
@@ -226,6 +226,7 @@ def upload_basket(upload_items,
 
     try:
         upload_path = f"s3://{upload_directory}"
+        opal_s3fs.mkdir(upload_path)
         temp_dir = tempfile.TemporaryDirectory()
         temp_dir_path = temp_dir.name
         
@@ -291,7 +292,7 @@ def upload_basket(upload_items,
             raise Exception('Test Clean Up')
   
     except Exception as e:
-        if opal_s3fs.ls(upload_path) != []:
+        if opal_s3fs.exists(upload_path):
             opal_s3fs.rm(upload_path, recursive = True)
         raise e
   
