@@ -492,7 +492,7 @@ class TestUploadBasket():
         dir_path1 = os.path.join(self.temp_dir_path, 'directory_name')
         os.mkdir(dir_path1)
 
-        file_path2 = os.path.join(dir_path1, 'file2.txt')
+        file_path2 = os.path.join(dir_path1, 'file.txt')
         file2_data = '5678'
         
         with open(file_path2, "w") as outfile:
@@ -500,7 +500,7 @@ class TestUploadBasket():
         
         mid_dir_path = os.path.join(dir_path1, 'mid_directory')
         os.mkdir(mid_dir_path)
-        file_path3 = os.path.join(mid_dir_path, 'file3.txt')
+        file_path3 = os.path.join(mid_dir_path, 'file.txt')
         file3_data = 'ABCDEFG'
         with open(file_path3, "w") as outfile:
             outfile.write(file3_data)
