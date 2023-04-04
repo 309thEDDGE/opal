@@ -6,8 +6,30 @@ import s3fs
 import hashlib
 import math
 from datetime import datetime
+from pathlib import Path
 
-def derive_integrity_data(file_path, byte_count = 10**6):
+def validate_upload_item(upload_item):
+    
+    if not isinstance(upload_item, dict):
+        raise TypeError(f"'upload_item' must be a dictionary: 'upload_item = {upload_item}'")
+        
+    expected_schema = {'path': str,
+                       'stub': bool}
+    for key, value in upload_item.items():
+        if key not in expected_schema.keys():
+            raise KeyError(f"Invalid upload_item key: '{key}'"
+                           f"\nExpected keys: {list(expected_schema.keys())}"
+                          )
+        if not isinstance(value, expected_schema[key]):
+            raise TypeError(f"Invalid upload_item type: '{key}: {type(value)}'"
+                            f"\nExpected type: {expected_schema[key]}"
+                           )
+            
+    if not os.path.exists(upload_item['path']):
+        raise FileExistsError(f"'path' does not exist: '{upload_item['path']}'")
+    
+
+def derive_integrity_data(file_path, byte_count = 10**8):
     """
     Derive basic integrity data from a file.
 
@@ -34,6 +56,8 @@ def derive_integrity_data(file_path, byte_count = 10**6):
       'file_size': bytes (int),
       'hash': sha256 hash (string),
       'access_date': current date/time (string)
+      'source_path': path to the original source of data (string)
+      'byte_count': byte count used for generated checksum (int)
      }
 
     """
@@ -74,9 +98,11 @@ def derive_integrity_data(file_path, byte_count = 10**6):
 
     return {'file_size': file_size,
             'hash': sha256_hash,
-            'access_date': datetime.now().strftime("%m/%d/%Y %H:%M:%S")}
+            'access_date': datetime.now().strftime("%m/%d/%Y %H:%M:%S"),
+            'source_path': file_path,
+            'byte_count': byte_count}
 
-def upload_basket(local_dir_path,
+def upload_basket(upload_items,
                  upload_directory,
                  unique_id,
                  basket_type,
@@ -85,29 +111,49 @@ def upload_basket(local_dir_path,
                  label = '',
                  **kwargs):
     """
-    Upload a directory of data to MinIO. 
+    Upload files and directories to MinIO. 
 
-    This function takes in a local directory path along with
-    taging information and creates a metadata.json file and
-    a basket_details.json file. These two files together with 
-    the data from local_dir_path are uploaded to the 
-    upload_directory path within MinIO as a basket of data. 
+    This function takes in a list of items to upload along with
+    taging information and uploads the data together with three
+    json files: basket_manifest.json, basket_metadata.json, and
+    supplement.json. The contents of the three files are specified 
+    below. These three files together with the data specified by
+    upload_items are uploaded to the upload_directory path within 
+    MinIO as a basket of data. 
     
-    basket_details.json contains:
+    basket_manifest.json contains:
         1) unique_id
         2) list of parent ids
         3) basket type
         4) label
         5) upload date
         
-    metadata.json contains:
+    basket_metadata.json contains:
         1) dictionary passed in through the metadata parameter
+        
+    basket_supplement.json contains:
+        1) the upload_items object that was passed as an input parameter
+        2) integrity_data for every file uploaded 
+            a) file checksum
+            b) upload date
+            c) file size (bytes)
+            d) source path (original file location) 
+            e) stub (true/false)
+            f) upload path (path to where the file is uploaded in MinIO)
 
     Parameters
     ----------
-    local_dir_path : str
-        Path to local directory containing data to be 
-        uploaded to MinIO.
+    upload_items : [dict]
+        List of python dictionaries with the following schema:
+        {
+            'path': path to the file or folder being uploaded (string),
+            'stub': true/false (bool)
+        }
+        'path' can be a file or folder to be uploaded. Every filename
+        and folder name must be unique. If 'stub' is set to True, integrity data
+        will be included without uploading the actual file or folder. Stubs are 
+        useful when original file source information is desired without uploading
+        the data itself. This is especially useful when dealing with large files.
     upload_directory: str
         MinIO path where basket is to be uploaded.
     unique_id: int
@@ -123,20 +169,36 @@ def upload_basket(local_dir_path,
     label: optional str,
         Optional user friendly label associated with the basket 
     """
-    
     kwargs_schema = {'test_clean_up': bool}
     for key, value in kwargs.items():
         if key not in kwargs_schema.keys():
             raise KeyError(f"Invalid kwargs argument: '{key}'")
-            continue
         if not isinstance(value, kwargs_schema[key]):
             raise TypeError(f"Invalid datatype: '{key}: must be type {kwargs_schema[key]}'")
 
     test_clean_up = kwargs.get("test_clean_up", False)
 
-    if not os.path.isdir(local_dir_path):
-        raise ValueError(f"'local_dir_path' must be a valid directory: '{local_dir_path}'")
-
+    if not isinstance(upload_items, list):
+        raise TypeError(f"'upload_items' must be a list of dictionaries: '{upload_items}'")
+        
+    if not all(isinstance(x, dict) for x in upload_items):
+        raise TypeError(f"'upload_items' must be a list of dictionaries: '{upload_items}'")
+        
+    # Validate upload_items
+    local_path_basenames = []
+    unallowed_filenames = ['basket_manifest.json', 'basket_metadata.json', 'basket_supplement.json']
+    for upload_item in upload_items:
+        validate_upload_item(upload_item)
+        local_path_basename = os.path.basename(Path(upload_item['path']))
+        if local_path_basename in unallowed_filenames:
+            raise ValueError(f"'{local_path_basename}' filename not allowed")
+        # Check for duplicate file/folder names
+        if local_path_basename in local_path_basenames:
+            raise ValueError(f"'upload_item' folder and file names must be unique:"
+                             f" Duplicate Name = {local_path_basename}")
+        else:
+            local_path_basenames.append(local_path_basename)
+        
     if not isinstance(upload_directory, str):
         raise TypeError(f"'upload_directory' must be a string: '{upload_directory}'")
 
@@ -164,29 +226,67 @@ def upload_basket(local_dir_path,
         raise FileExistsError(f"'upload_directory' already exists: '{upload_directory}''")
 
     try:
+        upload_path = f"s3://{upload_directory}"
         temp_dir = tempfile.TemporaryDirectory()
         temp_dir_path = temp_dir.name
+        
+        supplement_data = {}
+        supplement_data['upload_items'] = upload_items
+        supplement_data['integrity_data'] = []
+        
+        for upload_item in upload_items:
+            upload_item_path = Path(upload_item['path'])
+            if upload_item_path.is_dir():
+                for root, dirs, files in os.walk(upload_item_path):
+                    for name in files:
+                        local_path = os.path.join(root, name)
+                        file_integrity_data = derive_integrity_data(str(local_path))
+                        if upload_item['stub'] == False:
+                            file_integrity_data['stub'] = False
+                            file_upload_path = os.path.join(upload_path, 
+                                                            os.path.relpath(local_path, os.path.split(upload_item_path)[0]))
+                            file_integrity_data['upload_path'] = str(file_upload_path)
+                            opal_s3fs.upload(local_path, file_upload_path)
+                        else:
+                            file_integrity_data['stub'] = True
+                            file_integrity_data['upload_path'] = 'stub'
+                        supplement_data['integrity_data'].append(file_integrity_data)
+            else:
+                file_integrity_data = derive_integrity_data(str(upload_item_path))
+                if upload_item['stub'] == False:
+                    file_integrity_data['stub'] = False
+                    file_upload_path = os.path.join(upload_path,os.path.basename(upload_item_path))
+                    file_integrity_data['upload_path'] = str(file_upload_path)
+                    opal_s3fs.upload(str(upload_item_path), file_upload_path)
+                else:
+                    file_integrity_data['stub'] = True
+                    file_integrity_data['upload_path'] = 'stub'
+                supplement_data['integrity_data'].append(file_integrity_data) 
 
         basket_json_path = os.path.join(temp_dir_path, 'basket_manifest.json')
-        metadata_path = os.path.join(temp_dir_path, 'metadata.json')
+        metadata_path = os.path.join(temp_dir_path, 'basket_metadata.json')
+        supplement_json_path = os.path.join(temp_dir_path, 'basket_supplement.json')
         basket_json = {}
         basket_json['uuid'] = unique_id
-        basket_json['upload_time'] = time.time_ns() // 1000
+        basket_json['upload_time'] = datetime.now().strftime("%m/%d/%Y %H:%M:%S")
         basket_json['parent_uuids'] = parent_ids
         basket_json['basket_type'] = basket_type
         basket_json['label'] = label
 
         with open(basket_json_path, "w") as outfile:
             json.dump(basket_json, outfile)
+            
+        opal_s3fs.upload(basket_json_path, os.path.join(upload_path,'basket_manifest.json'))
 
-        upload_path = f"s3://{upload_directory}"
-        opal_s3fs.upload(local_dir_path, upload_path, recursive=True)
         if metadata != {}:
             with open(metadata_path, "w") as outfile:
                 json.dump(metadata, outfile)
-            opal_s3fs.upload(metadata_path, os.path.join(upload_path,'metadata.json'))
+            opal_s3fs.upload(metadata_path, os.path.join(upload_path,'basket_metadata.json'))
 
-        opal_s3fs.upload(basket_json_path, os.path.join(upload_path,'basket_manifest.json'))
+        with open(supplement_json_path, "w") as outfile:
+            json.dump(supplement_data, outfile)
+            
+        opal_s3fs.upload(supplement_json_path, os.path.join(upload_path,'basket_supplement.json'))
 
         if test_clean_up:
             raise Exception('Test Clean Up')
