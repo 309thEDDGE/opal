@@ -80,6 +80,7 @@ def derive_integrity_data(file_path, byte_count = 10**8):
 
     file_size = os.path.getsize(file_path)
 
+    # TODO: Read in small chunks of the file at a time to protect from RAM overload
     if file_size <= byte_count * 3:
         sha256_hash = hashlib.sha256(open(file_path,'rb').read()).hexdigest()
     else:
