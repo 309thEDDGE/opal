@@ -227,6 +227,7 @@ def upload_basket(upload_items,
 
     try:
         upload_path = f"s3://{upload_directory}"
+        opal_s3fs.mkdir(upload_path)
         temp_dir = tempfile.TemporaryDirectory()
         temp_dir_path = temp_dir.name
         
