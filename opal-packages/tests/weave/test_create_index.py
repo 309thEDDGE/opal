@@ -34,11 +34,13 @@ class TestCreateIndex():
             f.write('this is a test file')
 
         #upload basket 2 levels deep
-        upload_basket(self.local_dir_path, f'{self.test_bucket}/{self.basket_type}/1234', 1234,
+        upload_basket([{'path': self.local_dir_path,
+                        'stub': False}], f'{self.test_bucket}/{self.basket_type}/1234', 1234,
                       self.basket_type, [1111,2222], label = 'my label')
         
         #upload basket 3 levels deeps
-        upload_basket(self.local_dir_path, f'{self.test_bucket}/{self.basket_type}/one_deeper/4321', 4321,
+        upload_basket([{'path': self.local_dir_path,
+                        'stub': False}], f'{self.test_bucket}/{self.basket_type}/one_deeper/4321', 4321,
                       self.basket_type, [333,444], label = 'my label')
 
         #make schema.json for testing purposes
@@ -96,7 +98,8 @@ class TestCreateIndex():
         with open(file_path, "w") as f:
             f.write('this is another test file')
     
-        upload_basket(self.local_dir_path, f'{self.test_bucket}/{self.basket_type}/5678',
+        upload_basket([{'path': self.local_dir_path,
+                        'stub': False}], f'{self.test_bucket}/{self.basket_type}/5678',
                       5678, self.basket_type, [3333], label = 'my label')
 
         #change a key in this basket_manifest.json
