@@ -4,7 +4,7 @@ import tempfile
 import pytest
 import uuid
 
-from opal.weave.weave import upload
+from opal.weave.access import upload
 
 class TestUpload():
     def setup_class(self):
