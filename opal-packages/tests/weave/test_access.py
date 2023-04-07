@@ -32,23 +32,35 @@ class TestUpload():
         self.temp_dir.cleanup()
         if self.opal_s3fs.exists(f's3://{self.bucket_name}'):
             self.opal_s3fs.rm(f's3://{self.bucket_name}', recursive = True)
-        
-    def test_upload_successful_run(self):
+            
+    @pytest.fixture
+    def run_uploader(self):
         parent_ids = [uuid.uuid1().hex]
         metadata = {
                     'oh': "i don't know",
                     'something': 'stupid'
         }
         label = 'my label'
-        upload_path = upload(self.upload_items, self.bucket_name, self.basket_type,
+        self.upload_path = upload(self.upload_items, self.bucket_name, self.basket_type,
               parent_ids, metadata, label)
         
-        uploaded_files = self.opal_s3fs.ls(upload_path)
-        assert os.path.join(upload_path, 'test.txt') in uploaded_files
-        assert os.path.join(upload_path, 'basket_manifest.json') in uploaded_files
-        assert os.path.join(upload_path, 'basket_supplement.json') in uploaded_files
-        assert os.path.join(upload_path, 'basket_metadata.json') in uploaded_files
-        assert len(uploaded_files) == 4
+        uploaded_files = self.opal_s3fs.ls(self.upload_path)
+        return uploaded_files
+        
+    def test_upload_test_txt_in_uploaded_files(self, run_uploader):
+        assert os.path.join(self.upload_path, 'test.txt') in run_uploader
+        
+    def test_upload_basket_manifest_in_uploaded_files(self, run_uploader):
+        assert os.path.join(self.upload_path, 'basket_manifest.json') in run_uploader
+        
+    def test_upload_basket_supplement_in_uploaded_files(self, run_uploader):
+        assert os.path.join(self.upload_path, 'basket_supplement.json') in run_uploader
+
+    def test_upload_basket_metadata_in_uploaded_files(self, run_uploader):
+        assert os.path.join(self.upload_path, 'basket_metadata.json') in run_uploader
+        
+    def test_upload_nothing_else_in_uploaded_files(self, run_uploader):
+        assert len(run_uploader) == 4
     
     def test_upload_bucket_name_is_string(self):
         bucket_name = 7
