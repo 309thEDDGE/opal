@@ -18,7 +18,8 @@ class NASAc10UploadFlow(opal.flow.OpalFlowSpec):
         "n",
         help="Number of ch10s to upload.",
         required=False,
-        default=None
+        default=None,
+        type=int 
     )
 
     bucket_name = metaflow.Parameter(
@@ -44,13 +45,15 @@ class NASAc10UploadFlow(opal.flow.OpalFlowSpec):
         opal_data = s3fs.S3FileSystem(anon = True, client_kwargs = {'region_name':'us-gov-west-1'})
         
         self.ch10_source_path = f's3://opal-data/nasa_ch10s_{self.ch10_directory_date}/'
+        
+        if not opal_data.exists(self.ch10_source_path):
+            raise FileNotFoundError(f"Ch10 Source Directory Not Found: {self.ch10_source_path}")
         if self.n == None:
             self.ch10_names = opal_data.ls(self.ch10_source_path)
         else:
-            self.ch10_names = opal_data.ls(self.ch10_source_path)[:int(self.n)]
+            self.ch10_names = opal_data.ls(self.ch10_source_path)[:self.n]
 
         for name in tqdm(self.ch10_names):
-            print(f'uploading: {name}')
             ch10_filename = os.path.basename(name)
             ch10_path = os.path.join(self.local_dir_path, ch10_filename)
             opal_data.get(name, ch10_path)
