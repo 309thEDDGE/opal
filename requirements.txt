@@ -1,3 +1,4 @@
 fsspec
 pandas
 metaflow
+s3fs
