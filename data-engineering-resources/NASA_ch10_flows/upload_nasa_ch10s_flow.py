@@ -61,13 +61,16 @@ class NASAc10UploadFlow(opal.flow.OpalFlowSpec):
 
         for name in self.ch10_names:
             ch10_filename = os.path.basename(name)
+            ch10_name = os.path.splitext(ch10_filename)[0]
             ch10_path = os.path.join(self.local_dir_path, ch10_filename)
             opal_data.get(name, ch10_path)
 
             upload_dict = [{'path':ch10_path,'stub':False}]
             self.metaflow_upload_basket(upload_dict,
                                         self.bucket_name,
-                                       'ch10')
+                                       'ch10',
+                                        label = ch10_name,
+                                        metadata = {'ch10name': ch10_name})
 
             os.remove(ch10_path)
 
