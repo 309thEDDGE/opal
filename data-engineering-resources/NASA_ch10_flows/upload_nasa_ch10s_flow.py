@@ -5,6 +5,7 @@ import tempfile
 import sys
 from tqdm import tqdm
 from metaflow import step, card
+import opal.flow
 
 class NASAc10UploadFlow(opal.flow.OpalFlowSpec):
     ch10_directory_date = metaflow.Parameter(
@@ -16,14 +17,14 @@ class NASAc10UploadFlow(opal.flow.OpalFlowSpec):
     n = metaflow.Parameter(
         "n",
         help="Number of ch10s to upload.",
-        required=False
+        required=False,
         default=None
     )
 
     bucket_name = metaflow.Parameter(
         "bucket_name",
         help="Name of the s3 bucket where data will be uploaded.",
-        required=False
+        required=False,
         default='basket-data'
     )
     
@@ -34,10 +35,11 @@ class NASAc10UploadFlow(opal.flow.OpalFlowSpec):
         """
         #create temporary directory to put data files locally
         self.temp_dir = tempfile.TemporaryDirectory()
-        self.local_dir_path = temp_dir.name
+        self.local_dir_path = self.temp_dir.name
     
         self.next(self.upload_ch10s)
         
+    @step
     def upload_ch10s(self):
         opal_data = s3fs.S3FileSystem(anon = True, client_kwargs = {'region_name':'us-gov-west-1'})
         
@@ -45,7 +47,7 @@ class NASAc10UploadFlow(opal.flow.OpalFlowSpec):
         if self.n == None:
             self.ch10_names = opal_data.ls(self.ch10_source_path)
         else:
-            self.ch10_names = opal_data.ls(self.ch10_source_path)[:self.n]
+            self.ch10_names = opal_data.ls(self.ch10_source_path)[:int(self.n)]
 
         for name in tqdm(self.ch10_names):
             print(f'uploading: {name}')
@@ -55,7 +57,7 @@ class NASAc10UploadFlow(opal.flow.OpalFlowSpec):
 
             upload_dict = [{'path':ch10_path,'stub':False}]
             self.metaflow_upload_basket(upload_dict, 
-                                        bucket_name, 
+                                        self.bucket_name, 
                                        'ch10')
 
             os.remove(ch10_path)

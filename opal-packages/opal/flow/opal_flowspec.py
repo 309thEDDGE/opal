@@ -58,9 +58,9 @@ class OpalFlowSpec(FlowSpec):
         basket_upload_path = weave_upload(upload_dict, 
                                           bucket_name, 
                                           basket_type,
-                                          label,
-                                          parent_ids,
-                                          metadata)
+                                          label = label,
+                                          parent_ids = parent_ids,
+                                          metadata = metadata)
         
         self.basket_uploads.append(basket_upload_path)
         
