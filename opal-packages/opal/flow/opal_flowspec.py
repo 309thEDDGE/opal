@@ -47,6 +47,7 @@ class OpalFlowSpec(FlowSpec):
                                label = '',
                                parent_ids = [],
                                metadata = {}):
+        '''A wrapper for metaflow to use weave.access.upload and track ids.'''
 
         if not hasattr(self, "basket_uploads"):
             self.basket_uploads = []

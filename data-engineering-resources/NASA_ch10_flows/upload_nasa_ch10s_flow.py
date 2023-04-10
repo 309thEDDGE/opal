@@ -6,9 +6,7 @@ from metaflow import step, card
 import opal.flow
 
 class NASAc10UploadFlow(opal.flow.OpalFlowSpec):
-    '''
-    Defines flow to upload NASA ch10 files.
-    '''
+    '''Defines a flow to upload NASA ch10 files.'''
     
     ch10_directory_date = metaflow.Parameter(
         "ch10_directory_date", help="Date of NASA ch10 upload (YYYY_MM_DD).", 
@@ -33,9 +31,7 @@ class NASAc10UploadFlow(opal.flow.OpalFlowSpec):
 
     @step
     def start(self):
-        """
-        Create empty temporary directory for ch10 storage.
-        """
+        """Create empty temporary directory for ch10 storage."""
         #create temporary directory to put data files locally
         self.temp_dir = tempfile.TemporaryDirectory()
         self.local_dir_path = self.temp_dir.name
@@ -45,7 +41,7 @@ class NASAc10UploadFlow(opal.flow.OpalFlowSpec):
     @step
     def upload_ch10s(self):
         '''
-        get all the NASA ch10 files from govcloud datastore,
+        get all the NASA ch10 files from a govcloud datastore,
         and upload them one at a time to the OPAL datastore
         '''
         opal_data = s3fs.S3FileSystem(anon = True, client_kwargs = {'region_name':'us-gov-west-1'})
@@ -79,6 +75,7 @@ class NASAc10UploadFlow(opal.flow.OpalFlowSpec):
     @card
     @step
     def end(self):
+        '''Cleanup temporary directory and satisfy metaflow'''
         self.temp_dir.cleanup()
         print("All Done")
 
