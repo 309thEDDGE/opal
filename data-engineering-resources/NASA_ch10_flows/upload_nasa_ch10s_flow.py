@@ -7,7 +7,7 @@ import opal.flow
 
 class NASAc10UploadFlow(opal.flow.OpalFlowSpec):
     '''
-    Defines our flow to upload NASA ch10 files.
+    Defines flow to upload NASA ch10 files.
     '''
     
     ch10_directory_date = metaflow.Parameter(
@@ -45,7 +45,7 @@ class NASAc10UploadFlow(opal.flow.OpalFlowSpec):
     @step
     def upload_ch10s(self):
         '''
-        get all the NASA ch10 files from our govcloud datastore,
+        get all the NASA ch10 files from govcloud datastore,
         and upload them one at a time to the OPAL datastore
         '''
         opal_data = s3fs.S3FileSystem(anon = True, client_kwargs = {'region_name':'us-gov-west-1'})
