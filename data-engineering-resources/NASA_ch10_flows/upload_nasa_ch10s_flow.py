@@ -40,7 +40,8 @@ class NASAc10UploadFlow(opal.flow.OpalFlowSpec):
 
     @step
     def upload_ch10s(self):
-        '''
+        '''Upload NASA ch10s from govcloud datastore.
+        
         get all the NASA ch10 files from a govcloud datastore,
         and upload them one at a time to the OPAL datastore
         '''
