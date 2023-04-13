@@ -76,7 +76,7 @@ class TranslateNASA1553Flow(opal.flow.OpalFlowSpec):
         manifest_path = os.path.join(dts_basket_address, 'basket_manifest.json')
         with opal_s3fs.open(manifest_path, 'rb') as file:
             manifest_data = json.load(file)
-            self.dts_id = manifest_data['UUID']
+            self.dts_id = manifest_data['uuid']
                 
         self.next(self.translate_parsed_1553)
         
