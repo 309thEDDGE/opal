@@ -281,7 +281,7 @@ def upload_basket(upload_items,
 
         if metadata != {}:
             with open(metadata_path, "w") as outfile:
-                json.dump(metadata, outfile)
+                json.dump(metadata, outfile, default = str)
             opal_s3fs.upload(metadata_path, os.path.join(upload_path,'basket_metadata.json'))
 
         with open(supplement_json_path, "w") as outfile:
