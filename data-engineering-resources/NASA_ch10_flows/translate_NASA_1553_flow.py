@@ -1,7 +1,11 @@
 import os
 import s3fs
+import subprocess
+import yaml
+import pandas as pd
 import tempfile
 import metaflow
+import json
 from metaflow import step, card
 import opal.flow
 from opal.weave.create_index import create_index_from_s3
@@ -28,7 +32,7 @@ class TranslateNASA1553Flow(opal.flow.OpalFlowSpec):
         translate_metadata = {}
         meta_file = os.path.join(self.local_translate_path, "_metadata.yaml")
         if not os.path.exists(meta_file):
-            raise FileNotFoundError(f'Translate metadata not found: {meta_file}'
+            raise FileNotFoundError(f'Translate metadata not found: {meta_file}')
                                     
         with open(meta_file) as f:
             metadata = yaml.safe_load(f)
@@ -50,21 +54,30 @@ class TranslateNASA1553Flow(opal.flow.OpalFlowSpec):
     @step
     def get_dts_file(self):
         
+        opal_s3fs = s3fs.S3FileSystem(client_kwargs = {'endpoint_url': os.environ['S3_ENDPOINT']})
+        
         index = create_index_from_s3(self.bucket_name, 'schema.json')
         
         index = create_index_from_s3('basket-data', 'schema.json')
-        dts_index = index[index['basket_type'] == '1553_dts'].copy()
-        dts_index['time'] = pd.to_datetime(ch10_index['upload_time'], format='%m/%d/%Y %H:%M:%S')
-        dts_basket_address = dts_index.loc[ch10_index['time'].idxmax()]['address']
+        dts_index = index[index['basket_type'] == 'DTS_1553_NASA'].copy()
+        dts_index['time'] = pd.to_datetime(dts_index['upload_time'], format='%m/%d/%Y %H:%M:%S')
+        dts_basket_address = dts_index.loc[dts_index['time'].idxmax()]['address']
         
         basket_contents = opal_s3fs.ls(dts_basket_address)
         
         dts_file_path = [x for x in basket_contents if x.endswith('.yaml')]
         if len(dts_file_path) != 1: 
-            raise ValueError(f'Could not find DTS file: {basket}')
+            raise ValueError(f'Could not find DTS file: {dts_basket_address}')
 
         self.dts_file_path = dts_file_path[0]
         opal_s3fs.get(self.dts_file_path, self.dts_folder)
+        
+        manifest_data = {}
+        manifest_path = os.path.join(dts_basket_address, 'basket_manifest.json')
+        with opal_s3fs.open(manifest_path, 'rb') as file:
+            manifest_data = json.load(file)
+            self.dts_id = manifest_data['UUID']
+                
         self.next(self.translate_parsed_1553)
         
     @step
@@ -72,7 +85,7 @@ class TranslateNASA1553Flow(opal.flow.OpalFlowSpec):
         '''
         '''
         opal_s3fs = s3fs.S3FileSystem(client_kwargs = {'endpoint_url': os.environ['S3_ENDPOINT']})
-        if not opal_s3fs.exists(ch10_bucket):
+        if not opal_s3fs.exists(self.bucket_name):
             raise FileNotFoundError(f"Specified Bucket Not Found: {self.bucket_name}")
         
         index = create_index_from_s3(self.bucket_name, 'schema.json')
@@ -87,25 +100,11 @@ class TranslateNASA1553Flow(opal.flow.OpalFlowSpec):
             
             #check that there is one parsed path and get the path to it
             s3_parsed_path = [x for x in basket_contents if '1553' in x and x.endswith('.parquet')]
-            if len(parsed_path) != 1: 
+            if len(s3_parsed_path) != 1: 
                 print(f'Basket does not have parsed data, skipping: {basket}')
                 continue
                 
             s3_parsed_path = s3_parsed_path[0]
-                
-            manifest_data = {}
-            manifest_path = os.path.join(basket, 'basket_manifest.json')
-            with open(manifest_path, 'rb') as file:
-                manifest_data = json.load(file)
-                
-            parent_ids = [manifest_data['uuid'], self.dts_id]
-            
-            parsed_metadata = {}
-            metadata_path = os.path.join(basket, 'basket_metadata.json')
-            with open(metadata_path, 'rb') as file:
-                parsed_metadata = json.load(file)
-                
-            ch10_name = parsed_metadata['ch10name']
             
             file_name = os.path.split(s3_parsed_path)[1]
             local_parsed_path = os.path.join(self.local_dir_path, file_name)
@@ -116,25 +115,35 @@ class TranslateNASA1553Flow(opal.flow.OpalFlowSpec):
             # run tip translate
             subprocess.run(
                 [
-                    "tip_translate",
+                    "tip_translate_1553",
                     local_parsed_path,
-                    "-L",
-                    "off",
-                    "-o",
-                    self.temp_dir,
-                    "-t",
-                    "4",
+                    self.dts_file_path,
+                    "--output_path",
+                    self.local_translate_path
                 ]
             )
             
+            manifest_data = {}
+            manifest_path = os.path.join(basket, 'basket_manifest.json')
+            with open(manifest_path, 'rb') as file:
+                manifest_data = json.load(file)
+                
+            self.parsed_id = manifest_data['uuid']
+            parent_ids = [self.parsed_id, self.dts_id]
             
+            parsed_metadata = {}
+            metadata_path = os.path.join(basket, 'basket_metadata.json')
+            with open(metadata_path, 'rb') as file:
+                parsed_metadata = json.load(file)
+                
+            ch10_name = parsed_metadata['ch10name']
             
             translate_metadata = self.extract_metadata()
             translate_metadata['ch10name'] = ch10_name
 
             #build upload_dicts
             upload_dicts = []
-            for f in os.scandir(local_translate_path):
+            for f in os.scandir(self.local_translate_path):
                 upload_dicts.append({'path':f.path,'stub':False})
             
             self.metaflow_upload_basket(upload_dicts,
@@ -143,7 +152,7 @@ class TranslateNASA1553Flow(opal.flow.OpalFlowSpec):
                                         label = ch10_name,
                                         metadata = translate_metadata)
 
-            os.remove(local_translate_path)
+            os.remove(self.local_translate_path)
             os.remove(local_parsed_path)
 
         self.next(self.end)
