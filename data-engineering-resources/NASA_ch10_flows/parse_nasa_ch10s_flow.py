@@ -8,12 +8,12 @@ from metaflow import step, card
 import opal.flow
 from opal.weave.create_index import create_index_from_s3
 
-class NASAc10UploadFlow(opal.flow.OpalFlowSpec):
-    '''Defines a flow to upload NASA ch10 files.'''
+class NASAch10ParseFlow(opal.flow.OpalFlowSpec):
+    '''Defines a flow to parse NASA ch10 files.'''
 
     n = metaflow.Parameter(
         "n",
-        help="Number of ch10s to upload.",
+        help="Number of ch10s to parse.",
         required=False,
         default=None,
         type=int
@@ -66,27 +66,31 @@ class NASAc10UploadFlow(opal.flow.OpalFlowSpec):
         '''
         '''
         opal_s3fs = s3fs.S3FileSystem(client_kwargs = {'endpoint_url': os.environ['S3_ENDPOINT']})
-        if not opal_s3fs.exists(ch10_bucket):
+        if not opal_s3fs.exists(self.bucket_name):
             raise FileNotFoundError(f"Specified Bucket Not Found: {self.bucket_name}")
         
         index = create_index_from_s3(self.bucket_name, 'schema.json')
         ch10_index = index[index['basket_type'] == 'ch10']
         self.ch10_baskets = ch10_index['address']
 
-        if self.n is not None:
+        if self.n is not None and self.n < len(self.ch10_baskets):
             self.ch10_baskets = self.ch10_baskets[:self.n]
 
         for basket in self.ch10_baskets:
-            basket_contents = opal_s3fs.ls(path)
+            basket_contents = opal_s3fs.ls(basket)
             parent_uuid = os.path.basename(basket)
             
             #check that there is one ch10 and get the path to it
-            ch10_path = [x for x in basket_contents if x.endswith('ch10')]
-            if len(ch10_path) != 1: print(
-            
+            rch10_path = [x for x in basket_contents if x.endswith('ch10')]
+            if len(rch10_path) != 1:
+                print(f'there are {len(rch10_path)} ch10s in basket {basket}. skipping.')
+                continue
+            rch10_path = rch10_path[0]
+
+            ch10_filename = os.path.basename(rch10_path)
             ch10_name = os.path.splitext(ch10_filename)[0]
             ch10_path = os.path.join(self.local_dir_path, ch10_filename)
-            opal_s3fs.get(name, ch10_path)
+            opal_s3fs.get(rch10_path, ch10_path)
             
             #run tip parse
             subprocess.run(
@@ -113,11 +117,17 @@ class NASAc10UploadFlow(opal.flow.OpalFlowSpec):
             
             self.metaflow_upload_basket(upload_dicts,
                                         self.bucket_name,
-                                       'parsed_ch10',
+                                       'ch10_parsed',
                                         label = ch10_name,
+                                        parent_ids = [parent_uuid],
                                         metadata = {'ch10name': ch10_name})
 
-            os.remove(ch10_path)
+            # clean out temp_dir
+            for f in os.scandir(self.temp_dir):
+                if f.is_dir:
+                    os.rmdir(f.path)
+                else:
+                    os.remove(f.path)
 
         self.next(self.end)
 
