@@ -10,6 +10,7 @@ python create_index.py <root_dir> <schema_path>
 
 import json
 import argparse
+import os
 import pandas as pd
 import opal.flow
 
@@ -73,7 +74,7 @@ def create_index_from_s3(root_dir, schema_path):
             validate_basket_dict(basket_dict, schema, basket_address)
             for field in basket_dict.keys():
                 index_dict[field].append(basket_dict[field])
-            index_dict['address'].append(basket_address)
+            index_dict['address'].append(os.path.dirname(basket_address))
             index_dict['storage_type'].append('s3')
 
     index = pd.DataFrame(index_dict)
