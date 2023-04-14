@@ -76,8 +76,8 @@ class TestCreateIndex():
                  'parent_uuids': [["1111", "2222"], ["333","444"]],
                  'basket_type': 'test_basket_type',
                  'label': 'my label',
-                 'address': [f's3://{self.test_bucket}/{self.basket_type}/1234/basket_manifest.json',
-                             f's3://{self.test_bucket}/{self.basket_type}/one_deeper/4321/basket_manifest.json'],
+                 'address': [f's3://{self.test_bucket}/{self.basket_type}/1234',
+                             f's3://{self.test_bucket}/{self.basket_type}/one_deeper/4321'],
                  'storage_type': 's3'}
         truth_index = pd.DataFrame(truth_index_dict)
 
