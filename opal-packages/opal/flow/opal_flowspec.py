@@ -63,6 +63,8 @@ class OpalFlowSpec(FlowSpec):
                                           metadata = metadata)
 
         self.basket_uploads.append(basket_upload_path)
+        
+        return basket_upload_path
 
     # simple wrapper for flow_script_utils.publish_run
     def publish(self, **kwargs):
