@@ -12,7 +12,7 @@ import opal.flow
 from opal.weave.create_index import create_index_from_s3
 
 class TranslateNASA1553Flow(opal.flow.OpalFlowSpec):
-    '''Defines a flow to upload NASA ch10 files.'''
+    '''Defines a flow to translate parsed NASA ch10 files.'''
 
     n = metaflow.Parameter(
         "n",
