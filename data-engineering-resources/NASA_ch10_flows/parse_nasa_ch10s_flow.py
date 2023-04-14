@@ -15,7 +15,7 @@ class NASAch10ParseFlow(opal.flow.OpalFlowSpec):
 
     n = metaflow.Parameter(
         "n",
-        help="Number of ch10s to parse. Default is to parse all found ch10s.",
+        help="Number of ch10s to parse. Default is to parse all ch10s.",
         required=False,
         default=None,
         type=int
@@ -62,7 +62,7 @@ class NASAch10ParseFlow(opal.flow.OpalFlowSpec):
         Returns
         -------
         tip_metadata (dict): all metadata generated during tip_parse run
-                             smushed into one dict.
+                             aggregated into one dict.
         '''
         basket_contents = self.opal_s3fs.ls(basket)
 
@@ -108,7 +108,12 @@ class NASAch10ParseFlow(opal.flow.OpalFlowSpec):
         ----------
         basket (str): path to a basket of type ch10 in s3.
         tip_metadata (dict): all metadata generated during tip_parse run
-                             smushed into one dict.
+                             aggregated into one dict.
+                             
+        Returns
+        -------
+        basket_upload_path (str): path to where the basket was uploaded,
+                                  returned from self.metaflow_upload_basket
         '''        
         #get ch10_name from basket_metadata
         with self.opal_s3fs.open(os.path.join(basket, 'basket_metadata.json'), 'rb') as file:
@@ -128,12 +133,14 @@ class NASAch10ParseFlow(opal.flow.OpalFlowSpec):
         for f in os.scandir(self.local_dir_path):
             upload_dicts.append({'path':f.path,'stub':False})
 
-        self.metaflow_upload_basket(upload_dicts,
-                                    self.bucket_name,
-                                   'ch10_parsed',
-                                    label = ch10_name,
-                                    parent_ids = parent_uuids,
-                                    metadata = tip_metadata)
+        basket_upload_path = self.metaflow_upload_basket(upload_dicts,
+                                                        self.bucket_name,
+                                                       'ch10_parsed',
+                                                        label = ch10_name,
+                                                        parent_ids = parent_uuids,
+                                                        metadata = tip_metadata)
+        
+        return basket_upload_path
     
 
     @step
@@ -166,9 +173,9 @@ class NASAch10ParseFlow(opal.flow.OpalFlowSpec):
                 
                 tip_metadata = self.parse_basket(basket)
 
-                self.upload_parsed_basket(basket, tip_metadata)
+                basket_upload_path = self.upload_parsed_basket(basket, tip_metadata)
                         
-                print(f'basket successfully parsed and uploaded: {basket}')
+                print(f'basket successfully parsed and uploaded: {basket_upload_path}')
                         
             except Exception as e:
                 print(e)
