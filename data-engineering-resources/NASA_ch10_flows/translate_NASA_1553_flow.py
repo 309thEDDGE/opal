@@ -203,7 +203,7 @@ class TranslateNASA1553Flow(opal.flow.OpalFlowSpec):
 
                 basket_upload_path = self.upload_translate_basket(basket, translate_metadata)
                         
-                print(f'basket successfully parsed and uploaded: {basket_upload_path}')
+                print(f'basket successfully translated and uploaded: {basket_upload_path}')
 
             except Exception as e:
                 print(e)
