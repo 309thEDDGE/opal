@@ -189,7 +189,7 @@ def setup_temp_dir(upload_directory, temp_dir, opal_s3fs, **kwargs):
     temp_dir_path = temp_dir.name
     return upload_path, temp_dir_path
 
-def create_upload_basket_supplement_data(upload_items, upload_path, opal_s3fs,
+def upload_files_and_stubs(upload_items, upload_path, opal_s3fs,
                                          **kwargs):
     ''' Returns JSON of supplement data '''
 

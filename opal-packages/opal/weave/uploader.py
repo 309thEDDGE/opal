@@ -83,8 +83,9 @@ def upload_basket(upload_items, upload_directory, unique_id, basket_type,
 
     try:
         temp_dir = tempfile.TemporaryDirectory()
+        # Upload the basket:
         upload_path, temp_dir_path = setup_temp_dir(**locals())
-        supplement_data = create_upload_basket_supplement_data(**locals())
+        supplement_data = upload_files_and_stubs(**locals())
         dump_basket_json(**locals())
         dump_basket_supplement(**locals())
 
