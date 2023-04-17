@@ -134,18 +134,22 @@ class TranslateNASA1553Flow(opal.flow.OpalFlowSpec):
 
         return self.metaflow_upload_basket( upload_dicts,
                                             self.bucket_name,
-                                           'ch10_translated_1553',
+                                           'Test-Justin',#ch10_translated_1553
+                                            parent_ids = parent_ids,
                                             label = ch10_name,
                                             metadata = translate_metadata)
 
     @step
     def start(self):
         '''Create empty temporary directory for parsed and translated data.'''
-        #create temporary directory to put data files locally
+        # Create temporary directory to put data files locally
         self.local_dir = tempfile.TemporaryDirectory()
         self.local_dir_path = self.local_dir.name
         self.dts_folder = os.path.join(self.local_dir_path, 'local_dts_folder')
         os.mkdir(self.dts_folder)
+        
+        # Create index of basket data stored in S3
+        self.basket_index = create_index_from_s3(self.bucket_name, 'schema.json')
 
         self.next(self.get_dts_file)
         
@@ -154,8 +158,7 @@ class TranslateNASA1553Flow(opal.flow.OpalFlowSpec):
         '''Get latest DTS file from S3 and save locally for translation.'''
         opal_s3fs = s3fs.S3FileSystem(client_kwargs = {'endpoint_url': os.environ['S3_ENDPOINT']})
         
-        index = create_index_from_s3(self.bucket_name, 'schema.json')
-        dts_index = index[index['basket_type'] == 'DTS_1553_NASA'].copy()
+        dts_index = self.basket_index[self.basket_index['basket_type'] == 'DTS_1553_NASA'].copy()
         dts_index['time'] = pd.to_datetime(dts_index['upload_time'], format='%m/%d/%Y %H:%M:%S')
         dts_basket_address = dts_index.loc[dts_index['time'].idxmax()]['address']
         
@@ -185,19 +188,17 @@ class TranslateNASA1553Flow(opal.flow.OpalFlowSpec):
         
         if not opal_s3fs.exists(self.bucket_name):
             raise FileNotFoundError(f"Specified Bucket Not Found: {self.bucket_name}")
-        
-        index = create_index_from_s3(self.bucket_name, 'schema.json')
-        ch10_index = index[index['basket_type'] == 'ch10_parsed']
+
+        ch10_index = self.basket_index[self.basket_index['basket_type'] == 'ch10_parsed']
         self.ch10_parsed_baskets = ch10_index['address']
 
         if self.n is not None:
             self.ch10_parsed_baskets = self.ch10_parsed_baskets[:self.n]
 
         num_baskets = len(self.ch10_parsed_baskets)
-        count = 1
         for i, basket in enumerate(self.ch10_parsed_baskets):
             try:
-                print(f'-- translating {i} of {num_baskets}: {basket}')
+                print(f'-- translating {i + 1} of {num_baskets}: {basket}')
                 
                 translate_metadata = self.translate_basket(basket)
 
