@@ -258,7 +258,7 @@ def dump_basket_supplement(temp_dir_path, metadata, supplement_data, opal_s3fs,
     metadata_path = os.path.join(temp_dir_path, 'basket_metadata.json')
     if metadata != {}:
         with open(metadata_path, "w") as outfile:
-            json.dump(metadata, outfile)
+            json.dump(metadata, outfile, default=str)
         opal_s3fs.upload(
             metadata_path, os.path.join(upload_path,'basket_metadata.json')
         )
