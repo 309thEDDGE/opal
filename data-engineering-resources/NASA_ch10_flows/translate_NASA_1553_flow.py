@@ -134,7 +134,7 @@ class TranslateNASA1553Flow(opal.flow.OpalFlowSpec):
 
         return self.metaflow_upload_basket( upload_dicts,
                                             self.bucket_name,
-                                           'Test-Justin',#ch10_translated_1553
+                                           'ch10_translated_1553',
                                             parent_ids = parent_ids,
                                             label = ch10_name,
                                             metadata = translate_metadata)
