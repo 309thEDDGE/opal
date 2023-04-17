@@ -66,7 +66,9 @@ class TranslateNASA1553Flow(opal.flow.OpalFlowSpec):
         #check that there is one parsed path and get the path to it
         s3_parsed_path = [x for x in basket_contents if '1553' in x and x.endswith('.parquet')]
         if len(s3_parsed_path) != 1: 
-            raise Exception(f'Basket does not have parsed data, skipping: {basket}')
+            raise Exception(f"Invalid parsed data, skipping: {basket}"
+                            f"Expected 1 '.parquet' folder, got {len(s3_parsed_path)}"
+                            )
 
         s3_parsed_path = s3_parsed_path[0]
 
