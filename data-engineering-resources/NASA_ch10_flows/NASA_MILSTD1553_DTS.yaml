@@ -27,23 +27,5 @@ translatable_message_definitions:
       NAV-0115: {offset: 0, cnt: 1, schema: UNSIGNEDBITS, msbval: 0, desc: "Magnetic Heading data valid, 0 = Not Valid, 1 = Valid", uom: "BOOL", multifmt: False, class: 0, msb: 15, lsb: 15, bitcnt: 1}      
       NAV-0116: {offset: 0, cnt: 1, schema: UNSIGNEDBITS, msbval: 0, desc: "Pitch and Roll data valid, 0 = Not Valid, 1 = Valid", uom: "BOOL", multifmt: False, class: 0, msb: 16, lsb: 16, bitcnt: 1}
 
-  TFW_ch30:
-    msg_data: {command: [15840, 0], lru_addr: [7, 0], lru_subaddr: [15, 0], lru_name: [bus_controller, flame_whisperer], bus: "1553InChan30", wrdcnt: 32, rate: 25, mode_code: False, desc: "Synthetic Flame Whisperer"}
-    word_elem:
-      TFW-01: {offset: 0, cnt: 1, schema: SIGNED16, msbval: 16384, desc: "Weight on Wheels", uom: "int (0=true 1=false)", multifmt: False, class: 0}
-      TFW-02: {offset: 1, cnt: 1, schema: SIGNED16, msbval: 16384, desc: "Master Warning", uom: "int (0=false 1=true)", multifmt: False, class: 0}
-      TFW-03: {offset: 2, cnt: 1, schema: SIGNED16, msbval: 16384, desc: "Wind Speed", uom: "Knots", multifmt: False, class: 0}
-      TFW-04: {offset: 3, cnt: 2, schema: UNSIGNED32, msbval: 570611, desc: "Fuel Tank Quantity 1", uom: "lbs", multifmt: False, class: 0}    
-    bit_elem:
-
-  TFW_ch31:
-    msg_data: {command: [15840, 0], lru_addr: [7, 0], lru_subaddr: [15, 0], lru_name: [bus_controller, flame_whisperer], bus: "1553InChan31", wrdcnt: 32, rate: 25, mode_code: False, desc: "Synthetic Flame Whisperer"}
-    word_elem:
-      TFW-01: {offset: 0, cnt: 1, schema: SIGNED16, msbval: 16384, desc: "Weight on Wheels", uom: "int (0=true 1=false)", multifmt: False, class: 0}
-      TFW-02: {offset: 1, cnt: 1, schema: SIGNED16, msbval: 16384, desc: "Master Warning", uom: "int (0=false 1=true)", multifmt: False, class: 0}
-      TFW-03: {offset: 2, cnt: 1, schema: SIGNED16, msbval: 16384, desc: "Wind Speed", uom: "Knots", multifmt: False, class: 0}
-      TFW-04: {offset: 3, cnt: 2, schema: UNSIGNED32, msbval: 570611, desc: "Fuel Tank Quantity 1", uom: "lbs", multifmt: False, class: 0}    
-    bit_elem:
-
 supplemental_bus_map_command_words:
 ...
