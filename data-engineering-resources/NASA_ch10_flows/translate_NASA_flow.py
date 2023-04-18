@@ -60,9 +60,9 @@ class TranslateNASAFlow(opal.flow.OpalFlowSpec):
         '''Translate parsed data and extract metadata.
         
         Given a parsed basket of the type given from the <type> parameter, 
-        check that there exists only one <type>.parquet in that basket. 
-        Then download the basket to a temporary directory, and translate
-        said parsed data. Extract and return the generated metadata.
+        check that <type>.parquet exists. Then download the basket to a 
+        temporary directory, and translate said parsed data. Extract and 
+        return the generated metadata.
         
         Parameters
         ----------
