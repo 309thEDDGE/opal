@@ -1,5 +1,3 @@
-import os
-import tempfile
 from .uploader_functions import *
 
 def upload_basket(upload_items, upload_directory, unique_id, basket_type,
@@ -64,29 +62,28 @@ def upload_basket(upload_items, upload_directory, unique_id, basket_type,
     label: optional str,
         Optional user friendly label associated with the basket.
     """
-    basket_class_instance = Basket_Class(
-        upload_items, upload_directory, unique_id, basket_type, parent_ids,
-        metadata, label, **kwargs
-    )
+    basket_class = Basket_Class(upload_items, upload_directory,
+                                unique_id, basket_type, parent_ids,
+                                metadata, label, **kwargs)
 
-    basket_class_instance.sanitize_upload_basket_kwargs()
-    basket_class_instance.sanitize_upload_basket_non_kwargs()
-    basket_class_instance.establish_s3fs()
-    basket_class_instance.check_that_upload_dir_does_not_exist()
+    basket_class.sanitize_args()
+    basket_class.establish_s3fs()
+    basket_class.check_that_upload_dir_does_not_exist()
 
     try:
-        basket_class_instance.setup_temp_dir()
-        basket_class_instance.upload_files_and_stubs()
-        basket_class_instance.dump_basket_json()
-        basket_class_instance.dump_basket_supplement()
+        basket_class.setup_temp_dir_for_staging_prior_to_s3fs()
+        basket_class.upload_files_and_stubs_to_s3fs()
+        basket_class.create_and_upload_basket_json_to_s3fs()
+        basket_class.upload_basket_metadata_to_s3fs()
+        basket_class.upload_basket_supplement_to_s3fs()
 
-        if basket_class_instance.test_clean_up:
+        if basket_class.test_clean_up:
             raise Exception('Test Clean Up')
 
     except Exception as e:
-        if basket_class_instance.opal_s3fs_upload_path_exists():
-            basket_class_instance.clean_out_s3fs_upload_dir()
+        if basket_class.opal_s3fs_upload_path_exists():
+            basket_class.clean_out_s3fs_upload_dir()
         raise e
 
     finally:
-        basket_class_instance.tear_down_temp_dir()
+        basket_class.tear_down_temp_dir()
