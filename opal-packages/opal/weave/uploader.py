@@ -1,6 +1,5 @@
 import os
 import tempfile
-import s3fs
 from .uploader_functions import *
 
 def upload_basket(upload_items, upload_directory, unique_id, basket_type,
@@ -65,37 +64,29 @@ def upload_basket(upload_items, upload_directory, unique_id, basket_type,
     label: optional str,
         Optional user friendly label associated with the basket.
     """
-    # Two asterisks on the next line unpacks kwargs to pass to the function
-    sanitize_upload_basket_kwargs(**kwargs)
-
-    test_clean_up = kwargs.get("test_clean_up", False)
-
-    sanitize_upload_basket_non_kwargs(**locals())
-
-    opal_s3fs = s3fs.S3FileSystem(
-        client_kwargs={"endpoint_url": os.environ["S3_ENDPOINT"]}
+    basket_class_instance = Basket_Class(
+        upload_items, upload_directory, unique_id, basket_type, parent_ids,
+        metadata, label, **kwargs
     )
 
-    if opal_s3fs.isdir(upload_directory):
-        raise FileExistsError(
-            f"'upload_directory' already exists: '{upload_directory}''"
-        )
+    basket_class_instance.sanitize_upload_basket_kwargs()
+    basket_class_instance.sanitize_upload_basket_non_kwargs()
+    basket_class_instance.establish_s3fs()
+    basket_class_instance.check_that_upload_dir_does_not_exist()
 
     try:
-        temp_dir = tempfile.TemporaryDirectory()
-        # Upload the basket:
-        upload_path, temp_dir_path = setup_temp_dir(**locals())
-        supplement_data = upload_files_and_stubs(**locals())
-        dump_basket_json(**locals())
-        dump_basket_supplement(**locals())
+        basket_class_instance.setup_temp_dir()
+        basket_class_instance.upload_files_and_stubs()
+        basket_class_instance.dump_basket_json()
+        basket_class_instance.dump_basket_supplement()
 
-        if test_clean_up:
+        if basket_class_instance.test_clean_up:
             raise Exception('Test Clean Up')
 
     except Exception as e:
-        if opal_s3fs.exists(upload_path):
-            opal_s3fs.rm(upload_path, recursive = True)
+        if basket_class_instance.opal_s3fs_upload_path_exists():
+            basket_class_instance.clean_out_s3fs_upload_dir()
         raise e
 
     finally:
-        temp_dir.cleanup()
+        basket_class_instance.tear_down_temp_dir()
