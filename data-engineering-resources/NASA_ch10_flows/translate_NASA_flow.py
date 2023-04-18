@@ -146,6 +146,7 @@ class TranslateNASAFlow(opal.flow.OpalFlowSpec):
                                             self.bucket_name,
                                             f'ch10_translated_{self.data_type}',
                                             label = self.ch10_name,
+                                            parent_ids = parent_ids,
                                             metadata = translate_metadata)
 
     @step
@@ -170,14 +171,12 @@ class TranslateNASAFlow(opal.flow.OpalFlowSpec):
         self.dts_folder = os.path.join(self.local_dir_path, 'local_dts_folder')
         os.mkdir(self.dts_folder)
         self.basket_index = create_index_from_s3(self.bucket_name, 'schema.json')
-        
         self.next(self.get_dts_file)
         
     @step
     def get_dts_file(self):
         '''Get latest DTS file from S3 and save locally for translation.'''
         opal_s3fs = s3fs.S3FileSystem(client_kwargs = {'endpoint_url': os.environ['S3_ENDPOINT']})
-        
         dts_index = self.basket_index[self.basket_index['basket_type'] == f'NASA_{self.data_type}_DTS'].copy()
         dts_index['time'] = pd.to_datetime(dts_index['upload_time'], format='%m/%d/%Y %H:%M:%S')
         dts_basket_address = dts_index.loc[dts_index['time'].idxmax()]['address']
@@ -206,7 +205,6 @@ class TranslateNASAFlow(opal.flow.OpalFlowSpec):
         
         if not opal_s3fs.exists(self.bucket_name):
             raise FileNotFoundError(f"Specified Bucket Not Found: {self.bucket_name}")        
-        
         ch10_index = self.basket_index[self.basket_index['basket_type'] == 'ch10_parsed']
         self.ch10_parsed_baskets = ch10_index['address']
 
