@@ -29,7 +29,8 @@ class TranslateNASAFlow(opal.flow.OpalFlowSpec):
 
     bucket_name = metaflow.Parameter(
         "bucket_name",
-        help="Name of the s3 bucket where data will be uploaded.",
+        help="Name of the s3 bucket where parsed data is stored and translated" 
+             "data will be uploaded.",
         required=False,
         default='basket-data'
     )
@@ -102,6 +103,8 @@ class TranslateNASAFlow(opal.flow.OpalFlowSpec):
                 self.local_dts_path,
                 "-L",
                 "off",
+                "--thread_count",
+                "3",
                 "--output_path",
                 self.local_translate_path
             ]
