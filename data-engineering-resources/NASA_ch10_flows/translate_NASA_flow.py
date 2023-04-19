@@ -29,8 +29,8 @@ class TranslateNASAFlow(opal.flow.OpalFlowSpec):
 
     bucket_name = metaflow.Parameter(
         "bucket_name",
-        help="Name of the s3 bucket where parsed data is stored and translated" 
-             "data will be uploaded.",
+        help="Name of the s3 bucket where parsed data is stored." 
+             " Translated data will also be uploaded to this same bucket",
         required=False,
         default='basket-data'
     )
