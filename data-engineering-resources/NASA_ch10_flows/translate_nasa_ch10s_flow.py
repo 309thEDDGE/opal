@@ -11,8 +11,14 @@ from metaflow import step, card
 import opal.flow
 from opal.weave.create_index import create_index_from_s3
 
-class TranslateNASAFlow(opal.flow.OpalFlowSpec):
+class NASAch10TranslateFlow(opal.flow.OpalFlowSpec):
     '''Defines a flow to translate parsed NASA ch10 files.''' 
+    
+    ''' Translate options provide the tip executable to be used 
+        to translate (first item in the list) and the end part of 
+        the parsed parquet file to look for in the basket to 
+        be used for translation (second item in the list).    
+    '''
     translate_options = {
         "MILSTD1553": ["tip_translate_1553", "_MILSTD1553_F1.parquet"],
         "ARINC429": ["tip_translate_arinc429", "_ARINC429_F0.parquet"],
@@ -46,7 +52,9 @@ class TranslateNASAFlow(opal.flow.OpalFlowSpec):
     def extract_metadata(self):
         '''Gather metadata from translation.'''
         translate_metadata = {}
-        meta_file = os.path.join(self.local_translate_path, "parsed_data_translated", "_metadata.yaml")
+        meta_file = os.path.join(self.local_translate_path, 
+                                 "parsed_data_translated", 
+                                 "_metadata.yaml")
         
         if not os.path.exists(meta_file):
             raise FileNotFoundError(f'Translate metadata not found: {meta_file}')
@@ -73,7 +81,8 @@ class TranslateNASAFlow(opal.flow.OpalFlowSpec):
         -------
         translate_metadata (dict): metadata generated during tip_translate.
         '''
-        opal_s3fs = s3fs.S3FileSystem(client_kwargs = {'endpoint_url': os.environ['S3_ENDPOINT']})
+        opal_s3fs = s3fs.S3FileSystem(client_kwargs = 
+                                      {'endpoint_url': os.environ['S3_ENDPOINT']})
         
         parsed_metadata = {}
         metadata_path = os.path.join(basket, 'basket_metadata.json')
@@ -82,16 +91,19 @@ class TranslateNASAFlow(opal.flow.OpalFlowSpec):
 
         self.ch10_name = parsed_metadata['ch10name']
         
-        s3_parsed_path = f'{basket}/{self.ch10_name}{self.translate_options[self.data_type][1]}'
+        s3_parsed_path = f"{basket}/{self.ch10_name}" \
+                         f"{self.translate_options[self.data_type][1]}"
         if not opal_s3fs.exists(s3_parsed_path):
             raise Exception(f'Parsed data does not exist {s3_parsed_path}'
                             f', skipping: {basket}')
 
-        self.local_parsed_dir = os.path.join(self.local_dir_path, 'parsed_data.parquet')
+        self.local_parsed_dir = os.path.join(self.local_dir_path, 
+                                             'parsed_data.parquet')
         os.mkdir(self.local_parsed_dir)
 
         opal_s3fs.get(s3_parsed_path, self.local_parsed_dir, recursive = True)
-        self.local_translate_path = os.path.join(self.local_dir_path, 'translated_output')
+        self.local_translate_path = os.path.join(self.local_dir_path, 
+                                                 'translated_output')
         os.mkdir(self.local_translate_path)
 
         tip_exec = self.translate_options[self.data_type][0]
@@ -128,7 +140,8 @@ class TranslateNASAFlow(opal.flow.OpalFlowSpec):
         basket_upload_path (str): path to where the basket was uploaded,
                                   returned from self.metaflow_upload_basket
         '''  
-        opal_s3fs = s3fs.S3FileSystem(client_kwargs = {'endpoint_url': os.environ['S3_ENDPOINT']})
+        opal_s3fs = s3fs.S3FileSystem(client_kwargs = 
+                                      {'endpoint_url': os.environ['S3_ENDPOINT']})
         
         manifest_data = {}
         manifest_path = os.path.join(basket, 'basket_manifest.json')
@@ -154,8 +167,11 @@ class TranslateNASAFlow(opal.flow.OpalFlowSpec):
 
     @step
     def start(self):
-        '''Sanitize inputs and create empty temporary directories for parsed and translated data.'''
-        opal_s3fs = s3fs.S3FileSystem(client_kwargs = {'endpoint_url': os.environ['S3_ENDPOINT']})
+        ''' Sanitize inputs and create empty temporary 
+           directories for parsed and translated data.
+        '''
+        opal_s3fs = s3fs.S3FileSystem(client_kwargs = 
+                                      {'endpoint_url': os.environ['S3_ENDPOINT']})
         
         # sanitize inputs
         if self.n is not None:
@@ -163,10 +179,12 @@ class TranslateNASAFlow(opal.flow.OpalFlowSpec):
                 raise ValueError(f'n is required to be > 0: n = {self.n}')
                 
         if self.data_type not in self.translate_options.keys():
-            raise ValueError(f'data_type must be any of {self.data_type}, data_type = {self.data_type}')
+            raise ValueError(f"data_type must be any of {self.data_type}, " 
+                             f"data_type = {self.data_type}")
                 
         if not opal_s3fs.exists(self.bucket_name):
-            raise FileNotFoundError(f'bucket_name does not exist: bucket_name = {self.bucket_name}')
+            raise FileNotFoundError(f"bucket_name does not exist: "
+                                    f"bucket_name = {self.bucket_name}")
                 
         # create temporary directory to put data files locally
         self.local_dir = tempfile.TemporaryDirectory()
@@ -179,9 +197,15 @@ class TranslateNASAFlow(opal.flow.OpalFlowSpec):
     @step
     def get_dts_file(self):
         '''Get latest DTS file from S3 and save locally for translation.'''
-        opal_s3fs = s3fs.S3FileSystem(client_kwargs = {'endpoint_url': os.environ['S3_ENDPOINT']})
-        dts_index = self.basket_index[self.basket_index['basket_type'] == f'NASA_{self.data_type}_DTS'].copy()
-        dts_index['time'] = pd.to_datetime(dts_index['upload_time'], format='%m/%d/%Y %H:%M:%S')
+        opal_s3fs = s3fs.S3FileSystem(client_kwargs = 
+                                      {'endpoint_url': os.environ['S3_ENDPOINT']})
+        
+        dts_index = self.basket_index[self.basket_index['basket_type'] == 
+                                      f'NASA_{self.data_type}_DTS'].copy()
+        
+        dts_index['time'] = pd.to_datetime(dts_index['upload_time'], 
+                                           format='%m/%d/%Y %H:%M:%S')
+        
         dts_basket_address = dts_index.loc[dts_index['time'].idxmax()]['address']
         
         s3_dts_path = f'{dts_basket_address}/NASA_{self.data_type}_DTS.yaml'
@@ -189,7 +213,8 @@ class TranslateNASAFlow(opal.flow.OpalFlowSpec):
             raise Exception(f'DTS file does not exist {s3_dts_path}')
 
         self.s3_dts_path = s3_dts_path
-        self.local_dts_path = os.path.join(self.dts_folder, os.path.basename(self.s3_dts_path))
+        self.local_dts_path = os.path.join(self.dts_folder, 
+                                           os.path.basename(self.s3_dts_path))
         
         opal_s3fs.get(self.s3_dts_path, self.local_dts_path)
         
@@ -203,12 +228,16 @@ class TranslateNASAFlow(opal.flow.OpalFlowSpec):
         
     @step
     def translate_parsed(self):
-        '''Translate ch10_parsed data from S3 and upload translated data as a ch10_translated_<type> basket'''
-        opal_s3fs = s3fs.S3FileSystem(client_kwargs = {'endpoint_url': os.environ['S3_ENDPOINT']})
+        ''' Translate ch10_parsed data from S3 and upload 
+            translated data as a ch10_translated_<type> basket'''
+        opal_s3fs = s3fs.S3FileSystem(client_kwargs = 
+                                      {'endpoint_url': os.environ['S3_ENDPOINT']})
         
         if not opal_s3fs.exists(self.bucket_name):
-            raise FileNotFoundError(f"Specified Bucket Not Found: {self.bucket_name}")        
-        ch10_index = self.basket_index[self.basket_index['basket_type'] == 'ch10_parsed']
+            raise FileNotFoundError(f"Specified Bucket Not Found: "
+                                    f"{self.bucket_name}")        
+        ch10_index = self.basket_index[self.basket_index['basket_type'] == 
+                                       'ch10_parsed']
         self.ch10_parsed_baskets = ch10_index['address']
 
         if self.n is not None:
@@ -221,9 +250,11 @@ class TranslateNASAFlow(opal.flow.OpalFlowSpec):
                 
                 translate_metadata = self.translate_basket(basket)
 
-                basket_upload_path = self.upload_translate_basket(basket, translate_metadata)
+                basket_upload_path = self.upload_translate_basket(basket, 
+                                                                  translate_metadata)
                         
-                print(f'basket successfully translated and uploaded: {basket_upload_path}')
+                print(f"basket successfully translated and uploaded: "
+                      f" {basket_upload_path}")
 
             except Exception as e:
                 print(e)
@@ -247,4 +278,4 @@ class TranslateNASAFlow(opal.flow.OpalFlowSpec):
         print("All Done")
 
 if __name__ == "__main__":
-    TranslateNASAFlow()
+    NASAch10TranslateFlow()
