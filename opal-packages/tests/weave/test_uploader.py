@@ -219,8 +219,11 @@ class TestDeriveIntegrityData():
 
     def test_derive_integrity_data_max_byte_count_exact(self):
         byte_count_in = 300 * 10**6 + 1
-        derive_integrity_data(self.file_path,
-                              byte_count = (byte_count_in - 1))
+        try:
+            derive_integrity_data(self.file_path,
+                                  byte_count = (byte_count_in - 1))
+        except Exception as e:
+            pytest.fail(f"Unexpected error occurred:{e}")
 
 
 class TestUploadBasket():

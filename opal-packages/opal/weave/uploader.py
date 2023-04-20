@@ -62,7 +62,7 @@ def upload_basket(upload_items, upload_directory, unique_id, basket_type,
     label: optional str,
         Optional user friendly label associated with the basket.
     """
-    basket_class = Basket_Class(upload_items, upload_directory,
+    basket_class = BasketClass(upload_items, upload_directory,
                                 unique_id, basket_type, parent_ids,
                                 metadata, label, **kwargs)
 

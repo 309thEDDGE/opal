@@ -110,7 +110,7 @@ def derive_integrity_data(file_path, byte_count=10**8):
             'byte_count': byte_count}
 
 
-class Basket_Class():
+class BasketClass():
     """This class abstracts functionality used by upload_basket."""
 
     def __init__(self, upload_items, upload_directory, unique_id, basket_type,
@@ -253,7 +253,7 @@ class Basket_Class():
         self.temp_dir_path = self.temp_dir.name
 
     def upload_files_and_stubs_to_s3fs(self):
-        '''Returns JSON of supplement data'''
+        '''Method to upload both files and stubs to S3FS'''
         supplement_data = {}
         supplement_data['upload_items'] = self.upload_items
         supplement_data['integrity_data'] = []
