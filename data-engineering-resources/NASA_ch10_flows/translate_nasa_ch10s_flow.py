@@ -94,7 +94,7 @@ class NASAch10TranslateFlow(opal.flow.OpalFlowSpec):
         s3_parsed_path = f"{basket}/{self.ch10_name}" \
                          f"{self.translate_options[self.data_type][1]}"
         if not opal_s3fs.exists(s3_parsed_path):
-            raise Exception(f'Parsed data does not exist {s3_parsed_path}'
+            raise Exception(f'Parsed data does not exist {s3_parsed_path}' \
                             f', skipping: {basket}')
 
         self.local_parsed_dir = os.path.join(self.local_dir_path, 
@@ -107,7 +107,11 @@ class NASAch10TranslateFlow(opal.flow.OpalFlowSpec):
         os.mkdir(self.local_translate_path)
 
         tip_exec = self.translate_options[self.data_type][0]
+        
         # run tip translate
+        # "-L off" turns off std out logs
+        # "--thread_count" sets the translator to run in parallel
+        # "--output_path" specifies the path for translated output
         subprocess.run(
             [
                 tip_exec,
@@ -179,11 +183,11 @@ class NASAch10TranslateFlow(opal.flow.OpalFlowSpec):
                 raise ValueError(f'n is required to be > 0: n = {self.n}')
                 
         if self.data_type not in self.translate_options.keys():
-            raise ValueError(f"data_type must be any of {self.data_type}, " 
+            raise ValueError(f"data_type must be any of {self.data_type}, " \
                              f"data_type = {self.data_type}")
                 
         if not opal_s3fs.exists(self.bucket_name):
-            raise FileNotFoundError(f"bucket_name does not exist: "
+            raise FileNotFoundError(f"bucket_name does not exist: " \
                                     f"bucket_name = {self.bucket_name}")
                 
         # create temporary directory to put data files locally
@@ -234,7 +238,7 @@ class NASAch10TranslateFlow(opal.flow.OpalFlowSpec):
                                       {'endpoint_url': os.environ['S3_ENDPOINT']})
         
         if not opal_s3fs.exists(self.bucket_name):
-            raise FileNotFoundError(f"Specified Bucket Not Found: "
+            raise FileNotFoundError(f"Specified Bucket Not Found: " \
                                     f"{self.bucket_name}")        
         ch10_index = self.basket_index[self.basket_index['basket_type'] == 
                                        'ch10_parsed']
@@ -253,7 +257,7 @@ class NASAch10TranslateFlow(opal.flow.OpalFlowSpec):
                 basket_upload_path = self.upload_translate_basket(basket, 
                                                                   translate_metadata)
                         
-                print(f"basket successfully translated and uploaded: "
+                print(f"basket successfully translated and uploaded: " \
                       f" {basket_upload_path}")
 
             except Exception as e:
