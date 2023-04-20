@@ -57,10 +57,10 @@ class NASAc10UploadFlow(opal.flow.OpalFlowSpec):
         opal_data = s3fs.S3FileSystem(anon = True, client_kwargs = {'region_name':'us-gov-west-1'})
 
         
-        if self.old is not None:
+        if self.old is None:
             self.ch10_source_path = f's3://opal-data/nasa_ch10s_{self.ch10_directory_date}/'
         else:
-            self.ch10_source_path = 's3://opal-data/nasa-ch10/chapter10'
+            self.ch10_source_path = 's3://opal-data/telemetry-demo-data'
 
         if not opal_data.exists(self.ch10_source_path):
             raise FileNotFoundError(f"Ch10 Source Directory Not Found: {self.ch10_source_path}")
