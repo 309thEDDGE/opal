@@ -10,7 +10,8 @@ import time
 import re
 from datetime import datetime
 
-from opal.weave.uploader import upload_basket, derive_integrity_data, validate_upload_item
+from opal.weave.uploader import (upload_basket, derive_integrity_data,
+                                 validate_upload_item)
 
 class TestValidateUploadItems():
 
@@ -21,31 +22,34 @@ class TestValidateUploadItems():
     def teardown_method(self):
         self.temp_dir.cleanup()
 
-    def test_validate_upload_item_correct_schema_path(self):
+    def test_validate_upload_item_correct_schema_path_key(self):
 
         file_path = 'path/path'
-        
+
         # Invalid Path Key
         upload_item = {
                         'path_invalid_key': file_path,
                         'stub': True
                       }
-        with pytest.raises(KeyError,
-                           match = f"Invalid upload_item key: 'path_invalid_key'"):
+        with pytest.raises(
+            KeyError, match = f"Invalid upload_item key: 'path_invalid_key'"
+        ):
             validate_upload_item(upload_item)
-        
-        # Invalid Path Type
+
+    def test_validate_upload_item_correct_schema_path_type(self):
+        file_path = 'path/path'
         upload_item = {
                         'path': 1234,
                         'stub': True
                       }
-        with pytest.raises(TypeError,
-                           match = f"Invalid upload_item type: 'path: <class \'int\'>'"):
+        with pytest.raises(
+            TypeError,
+            match = f"Invalid upload_item type: 'path: <class \'int\'>'"
+        ):
             validate_upload_item(upload_item)
-            
-    def test_validate_upload_item_correct_schema_stub(self):
+
+    def test_validate_upload_item_correct_schema_stub_key(self):
         file_path = 'path/path'
-        
         # Invalid Stub Key
         upload_item = {
                         'path': file_path,
@@ -54,65 +58,69 @@ class TestValidateUploadItems():
         with pytest.raises(KeyError,
                            match = f"Invalid upload_item key: 'invalid_stub_key'"):
             validate_upload_item(upload_item)
-            
+
+    def test_validate_upload_item_correct_schema_stub_key(self):
         # Invalid Stub Type
+        file_path = 'path/path'
         upload_item = {
                         'path': file_path,
                         'stub': 'invalid type'
                       }
-        with pytest.raises(TypeError,
-                           match = f"Invalid upload_item type: 'stub: <class \'str\'>'"):
+        with pytest.raises(
+            TypeError,
+            match = f"Invalid upload_item type: 'stub: <class \'str\'>'"
+        ):
             validate_upload_item(upload_item)
-        
+
     def test_validate_upload_item_correct_schema_extra_key(self):
         file_path = 'path/path'
-        
         # Extra Key
-        upload_item = {
-                        'path': file_path,
-                        'stub': True,
-                        'extra_key': True,
-                      }
-        with pytest.raises(KeyError,
-                           match = f"Invalid upload_item key: 'extra_key'"):
+        upload_item = {'path': file_path, 'stub': True, 'extra_key': True}
+        with pytest.raises(
+            KeyError, match = f"Invalid upload_item key: 'extra_key'"
+        ):
             validate_upload_item(upload_item)
-            
+
     def test_validate_upload_item_valid_inputs(self):
          # Correct Schema
         file_path = os.path.join(self.temp_dir_path, 'file.json')
         json_data = {'t': [1,2,3]}
         with open(file_path, "w") as outfile:
             json.dump(json_data, outfile)
-        valid_upload_item = {
-                                'path': file_path,
-                                'stub': True
-                            }
-        validate_upload_item(valid_upload_item)
-        
+        valid_upload_item = {'path': file_path, 'stub': True}
+        try:
+            validate_upload_item(valid_upload_item)
+        except Exception as e:
+            pytest.fail(f"Unexpected error occurred:{e}")
+
     def test_validate_upload_item_file_exists(self):
         upload_item = {
                         'path': 'i n v a l i d p a t h',
                         'stub': True
                       }
-        with pytest.raises(FileExistsError,
-                           match = f"'path' does not exist: 'i n v a l i d p a t h'"):
+        with pytest.raises(
+            FileExistsError,
+            match = f"'path' does not exist: 'i n v a l i d p a t h'"
+        ):
             validate_upload_item(upload_item)
-    
+
     def test_validate_upload_item_folder_exists(self):
         file_path = os.path.join(self.temp_dir_path, 'file.json')
         json_data = {'t': [1,2,3]}
         with open(file_path, "w") as outfile:
             json.dump(json_data, outfile)
-        valid_upload_item = {
-                                'path': self.temp_dir_path,
-                                'stub': True
-                            }
-        validate_upload_item(valid_upload_item)
-        
+        valid_upload_item = {'path': self.temp_dir_path, 'stub': True}
+        try:
+            validate_upload_item(valid_upload_item)
+        except Exception as e:
+            pytest.fail(f"Unexpected error occurred:{e}")
+
     def test_validate_upload_item_validate_dictionary(self):
         upload_item = 5
-        with pytest.raises(TypeError,
-                           match = f"'upload_item' must be a dictionary: 'upload_item = 5'"):
+        with pytest.raises(
+            TypeError,
+            match = f"'upload_item' must be a dictionary: 'upload_item = 5'"
+        ):
             validate_upload_item(upload_item)
 
 class TestDeriveIntegrityData():
@@ -130,37 +138,54 @@ class TestDeriveIntegrityData():
 
     def test_derive_integrity_data_file_doesnt_exist(self):
         file_path = 'f a k e f i l e p a t h'
-        with pytest.raises(FileExistsError,
-                           match = f"'file_path' does not exist: '{file_path}'"):
+        with pytest.raises(
+            FileExistsError,
+            match = f"'file_path' does not exist: '{file_path}'"
+        ):
             derive_integrity_data(file_path)
 
     def test_derive_integrity_data_path_is_string(self):
         file_path = 10
-        with pytest.raises(TypeError, match = f"'file_path' must be a string: '{file_path}'"):
+        with pytest.raises(
+            TypeError, match = f"'file_path' must be a string: '{file_path}'"
+        ):
             derive_integrity_data(file_path)
 
     def test_derive_integrity_data_byte_count_string(self):
         byte_count_in = 'invalid byte count'
-        with pytest.raises(TypeError, match = f"'byte_count' must be an int: '{byte_count_in}'"):
+        with pytest.raises(
+            TypeError, match = f"'byte_count' must be an int: '{byte_count_in}'"
+        ):
             derive_integrity_data(self.file_path, byte_count = byte_count_in)
 
     def test_derive_integrity_data_byte_count_float(self):
         byte_count_in = 6.5
-        with pytest.raises(TypeError, match = f"'byte_count' must be an int: '{byte_count_in}'"):
+        with pytest.raises(
+            TypeError, match = f"'byte_count' must be an int: '{byte_count_in}'"
+        ):
             derive_integrity_data(self.file_path, byte_count = byte_count_in)
 
     def test_derive_integrity_data_byte_count_0(self):
         byte_count_in = 0
-        with pytest.raises(ValueError, match = f"'byte_count' must be greater than zero: '{byte_count_in}'"):
+        with pytest.raises(
+            ValueError,
+            match = f"'byte_count' must be greater than zero: '{byte_count_in}'"
+        ):
             derive_integrity_data(self.file_path, byte_count = byte_count_in)
 
     def test_derive_integrity_data_large_byte_count(self):
-        assert '84d89877f0d4041efb6bf91a16f0248f2fd573e6af05c19f96bedb9f882f7882' == \
-        derive_integrity_data(self.file_path, 10**6)['hash']
+        assert (
+            '84d89877f0d4041efb6bf91a16f024' +
+            '8f2fd573e6af05c19f96bedb9f882f7882' ==
+            derive_integrity_data(self.file_path, 10**6)['hash']
+        )
 
     def test_derive_integrity_data_small_byte_count(self):
-        assert 'a2a7cb1d7fc8f79e33b716b328e19bb381c3ec96a2dca02a3d1183e7231413bb' == \
-        derive_integrity_data(self.file_path, 2)['hash']
+        assert (
+            'a2a7cb1d7fc8f79e33b716b328e19bb3' +
+            '81c3ec96a2dca02a3d1183e7231413bb' ==
+            derive_integrity_data(self.file_path, 2)['hash']
+        )
 
     def test_derive_integrity_data_file_size(self):
         assert derive_integrity_data(self.file_path, 2)['file_size'] == 10
@@ -172,21 +197,34 @@ class TestDeriveIntegrityData():
         now_seconds = time.time_ns() // 10**9
         diff_seconds = abs(access_date_seconds - now_seconds)
         assert diff_seconds < 60 
-        
+
     def test_derive_integrity_data_source_path(self):
-        assert derive_integrity_data(self.file_path, 2)['source_path'] == self.file_path
-        
+        assert (
+            derive_integrity_data(self.file_path, 2)['source_path'] ==
+            self.file_path
+        )
+
     def test_derive_integrity_byte_count(self):
         assert derive_integrity_data(self.file_path, 2)['byte_count'] == 2
-        
-    def test_derive_integrity_data_max_byte_count(self):
+
+    def test_derive_integrity_data_max_byte_count_off_by_one(self):
         byte_count_in = 300 * 10**6 + 1
-        with pytest.raises(ValueError, match = f"'byte_count' must be less "
-                         f"than or equal to 300000000 bytes: '{byte_count_in}'"):
-            derive_integrity_data(self.file_path, byte_count = byte_count_in)
-        
-        derive_integrity_data(self.file_path, byte_count = (byte_count_in - 1))
-        
+        with pytest.raises(
+            ValueError,
+            match = f"'byte_count' must be less "
+            f"than or equal to 300000000 bytes: '{byte_count_in}'"
+        ):
+            derive_integrity_data(self.file_path,
+                                  byte_count = byte_count_in)
+
+    def test_derive_integrity_data_max_byte_count_exact(self):
+        byte_count_in = 300 * 10**6 + 1
+        try:
+            derive_integrity_data(self.file_path,
+                                  byte_count = (byte_count_in - 1))
+        except Exception as e:
+            pytest.fail(f"Unexpected error occurred:{e}")
+
 
 class TestUploadBasket():
     def setup_class(cls):
@@ -211,51 +249,75 @@ class TestUploadBasket():
         if cls.opal_s3fs.exists(cls.test_bucket):
             cls.opal_s3fs.rm(cls.test_bucket, recursive = True)
 
-    def test_upload_basket_upload_items_is_list_of_dictionary(self):
+    def test_upload_basket_upload_items_is_not_a_string(self):
         upload_items = 'n o t a r e a l p a t h'
         unique_id = uuid.uuid1().hex
         upload_path = f"{self.basket_path}/{unique_id}"
 
-        with pytest.raises(TypeError, match =
-                           f"'upload_items' must be a list of dictionaries: '{upload_items}'"):
-            upload_basket(upload_items, upload_path, unique_id, self.basket_type)
-          
-        upload_items = ['invalid', 'invalid2']
-        with pytest.raises(TypeError, match =
-                           f"'upload_items' must be a list of dictionaries:"):
-            upload_basket(upload_items, upload_path, unique_id, self.basket_type)
-            
-        upload_items = [{}, 'invalid2']
-        with pytest.raises(TypeError, match =
-                           f"'upload_items' must be a list of dictionaries:"):
-            upload_basket(upload_items, upload_path, unique_id, self.basket_type)
+        with pytest.raises(TypeError,
+                           match = f"'upload_items' must be a list of "
+                           + f"dictionaries: '{upload_items}'"):
+            upload_basket(upload_items, upload_path,
+                          unique_id, self.basket_type)
 
-        assert not self.opal_s3fs.exists(f's3://{self.basket_path}')
-        
+    def test_upload_basket_upload_items_is_not_a_list_of_strings(self):
+        upload_items = ['invalid', 'invalid2']
+        unique_id = uuid.uuid1().hex
+        upload_path = f"{self.basket_path}/{unique_id}"
+        with pytest.raises(TypeError, match =
+                           f"'upload_items' must be a list of dictionaries:"):
+            upload_basket(upload_items, upload_path,
+                          unique_id, self.basket_type)
+
+    def test_upload_basket_upload_items_is_a_list_of_only_dictionaries(self):
+        upload_items = [{}, 'invalid2']
+        unique_id = uuid.uuid1().hex
+        upload_path = f"{self.basket_path}/{unique_id}"
+        with pytest.raises(TypeError, match =
+                           f"'upload_items' must be a list of dictionaries:"):
+            upload_basket(upload_items, upload_path,
+                          unique_id, self.basket_type)
+
+    def test_upload_basket_with_bad_upload_items_is_deleted_if_it_fails(self):
+        upload_items = [{}, 'invalid2']
+        unique_id = uuid.uuid1().hex
+        upload_path = f"{self.basket_path}/{unique_id}"
+        try:
+            upload_basket(upload_items, upload_path,
+                          unique_id, self.basket_type)
+        except TypeError:
+            assert not self.opal_s3fs.exists(f's3://{self.basket_path}')
+
     def test_upload_basket_upload_items_invalid_dictionary(self):
         unique_id = uuid.uuid1().hex
         upload_path = f"{self.basket_path}/{unique_id}"
-        
+
         local_dir_path = self.temp_dir_path
         json_path = os.path.join(local_dir_path, "sample.json")
         json_data = {'t': [1,2,3]}
         with open(json_path, "w") as outfile:
             json.dump(json_data, outfile)
-            
-        upload_items = [{
-                            'path': local_dir_path,
-                            'stub': True,
-                        }
-                        ,{
-                            'path_invalid_key': json_path,
-                            'stub': True
-                        }
-                       ]
+        upload_items = [{'path': local_dir_path, 'stub': True,},
+                        {'path_invalid_key': json_path, 'stub': True}]
         with pytest.raises(KeyError,
                            match = f"Invalid upload_item key: 'path_invalid_key'"):
             upload_basket(upload_items, upload_path, unique_id, self.basket_type)
 
-        assert not self.opal_s3fs.exists(f's3://{self.basket_path}')
+    def test_deletion_when_basket_upload_items_is_an_invalid_dictionary(self):
+        unique_id = uuid.uuid1().hex
+        upload_path = f"{self.basket_path}/{unique_id}"
+
+        local_dir_path = self.temp_dir_path
+        json_path = os.path.join(local_dir_path, "sample.json")
+        json_data = {'t': [1,2,3]}
+        with open(json_path, "w") as outfile:
+            json.dump(json_data, outfile)
+        upload_items = [{'path': local_dir_path, 'stub': True,},
+                        {'path_invalid_key': json_path, 'stub': True}]
+        try:
+            upload_basket(upload_items, upload_path, unique_id, self.basket_type)
+        except KeyError:
+            assert not self.opal_s3fs.exists(f's3://{self.basket_path}')
 
     def test_upload_basket_upload_items_check_unique_file_folder_names(self):
         unique_id = uuid.uuid1().hex
