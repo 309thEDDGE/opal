@@ -171,9 +171,7 @@ class NASAch10TranslateFlow(opal.flow.OpalFlowSpec):
 
     @step
     def start(self):
-        ''' Sanitize inputs and create empty temporary 
-           directories for parsed and translated data.
-        '''
+        '''Sanitize inputs and create temporary directories.'''
         opal_s3fs = s3fs.S3FileSystem(client_kwargs = 
                                       {'endpoint_url': os.environ['S3_ENDPOINT']})
         
@@ -232,8 +230,12 @@ class NASAch10TranslateFlow(opal.flow.OpalFlowSpec):
         
     @step
     def translate_parsed(self):
-        ''' Translate ch10_parsed data from S3 and upload 
-            translated data as a ch10_translated_<type> basket'''
+        '''Translate ch10_parsed data from S3 
+        
+            Download ch10_parsed data from S3, then translate
+            and upload translated data as a ch10_translated_<type> 
+            basket.
+        '''
         opal_s3fs = s3fs.S3FileSystem(client_kwargs = 
                                       {'endpoint_url': os.environ['S3_ENDPOINT']})
         
