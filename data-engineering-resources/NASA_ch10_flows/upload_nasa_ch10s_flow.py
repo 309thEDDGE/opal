@@ -28,6 +28,15 @@ class NASAc10UploadFlow(opal.flow.OpalFlowSpec):
         required=False,
         default='basket-data'
     )
+    
+    old = metaflow.Parameter(
+        "old",
+        help="Pass this parameter if you want the old ch10s from govcloud."
+             "This will override anything passed in to ch10_directory_date.",
+        required=False,
+        default=None,
+        type = bool
+    )
 
     @step
     def start(self):
@@ -47,7 +56,11 @@ class NASAc10UploadFlow(opal.flow.OpalFlowSpec):
         '''
         opal_data = s3fs.S3FileSystem(anon = True, client_kwargs = {'region_name':'us-gov-west-1'})
 
-        self.ch10_source_path = f's3://opal-data/nasa_ch10s_{self.ch10_directory_date}/'
+        
+        if self.old is not None:
+            self.ch10_source_path = f's3://opal-data/nasa_ch10s_{self.ch10_directory_date}/'
+        else:
+            self.ch10_source_path = 's3://opal-data/nasa-ch10/chapter10'
 
         if not opal_data.exists(self.ch10_source_path):
             raise FileNotFoundError(f"Ch10 Source Directory Not Found: {self.ch10_source_path}")
@@ -56,18 +69,22 @@ class NASAc10UploadFlow(opal.flow.OpalFlowSpec):
         else:
             self.ch10_names = opal_data.ls(self.ch10_source_path)[:self.n]
 
-        for name in self.ch10_names:
+        num_ch10s = len(self.ch10_names)
+        for i, name in enumerate(self.ch10_names):
+            print(f'{i+1}/{num_ch10s}: {name}')
             ch10_filename = os.path.basename(name)
             ch10_name = os.path.splitext(ch10_filename)[0]
             ch10_path = os.path.join(self.local_dir_path, ch10_filename)
             opal_data.get(name, ch10_path)
 
             upload_dict = [{'path':ch10_path,'stub':False}]
-            self.metaflow_upload_basket(upload_dict,
+            basket_upload_path = self.metaflow_upload_basket(upload_dict,
                                         self.bucket_name,
                                        'ch10',
                                         label = ch10_name,
                                         metadata = {'ch10name': ch10_name})
+            
+            print(f'basket successfully uploaded: {basket_upload_path}')
 
             os.remove(ch10_path)
 
