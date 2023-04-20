@@ -65,9 +65,9 @@ class NASAc10UploadFlow(opal.flow.OpalFlowSpec):
         if not opal_data.exists(self.ch10_source_path):
             raise FileNotFoundError(f"Ch10 Source Directory Not Found: {self.ch10_source_path}")
         if self.n is None:
-            self.ch10_names = opal_data.ls(self.ch10_source_path)
+            self.ch10_names = [x for x in opal_data.ls(self.ch10_source_path) if x.endswith('ch10')]
         else:
-            self.ch10_names = opal_data.ls(self.ch10_source_path)[:self.n]
+            self.ch10_names = [x for x in opal_data.ls(self.ch10_source_path) if x.endswith('ch10')][:self.n]
 
         num_ch10s = len(self.ch10_names)
         for i, name in enumerate(self.ch10_names):
