@@ -230,7 +230,7 @@ class NASAch10TranslateFlow(opal.flow.OpalFlowSpec):
         
     @step
     def translate_parsed(self):
-        '''Translate ch10_parsed data from S3 
+        '''Translate ch10_parsed data from S3.
         
             Download ch10_parsed data from S3, then translate
             and upload translated data as a ch10_translated_<type> 
