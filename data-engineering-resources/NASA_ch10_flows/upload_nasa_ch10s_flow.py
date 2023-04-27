@@ -8,10 +8,11 @@ import opal.flow
 class NASAc10UploadFlow(opal.flow.OpalFlowSpec):
     '''Defines a flow to upload NASA ch10 files.'''
     
-    ch10_directory_date = metaflow.Parameter(
-        "ch10_directory_date", help="Date of NASA ch10 upload (YYYY_MM_DD).", 
+    ch10_directory = metaflow.Parameter(
+        "ch10_directory", help="Directory name containing chapter 10 files to be uploaded, "
+                               "given by opal-data/<ch10_directory>", 
         required=False,
-        default = "2023_03_20"
+        default = "telemetry-demo-data"
     )
 
     n = metaflow.Parameter(
@@ -47,27 +48,31 @@ class NASAc10UploadFlow(opal.flow.OpalFlowSpec):
         '''
         opal_data = s3fs.S3FileSystem(anon = True, client_kwargs = {'region_name':'us-gov-west-1'})
 
-        self.ch10_source_path = f's3://opal-data/nasa_ch10s_{self.ch10_directory_date}/'
+        self.ch10_source_path = f's3://opal-data/{self.ch10_directory}'
 
         if not opal_data.exists(self.ch10_source_path):
             raise FileNotFoundError(f"Ch10 Source Directory Not Found: {self.ch10_source_path}")
         if self.n is None:
-            self.ch10_names = opal_data.ls(self.ch10_source_path)
+            self.ch10_names = [x for x in opal_data.ls(self.ch10_source_path) if x.endswith('ch10')]
         else:
-            self.ch10_names = opal_data.ls(self.ch10_source_path)[:self.n]
+            self.ch10_names = [x for x in opal_data.ls(self.ch10_source_path) if x.endswith('ch10')][:self.n]
 
-        for name in self.ch10_names:
+        num_ch10s = len(self.ch10_names)
+        for i, name in enumerate(self.ch10_names):
+            print(f'{i+1}/{num_ch10s}: {name}')
             ch10_filename = os.path.basename(name)
             ch10_name = os.path.splitext(ch10_filename)[0]
             ch10_path = os.path.join(self.local_dir_path, ch10_filename)
             opal_data.get(name, ch10_path)
 
             upload_dict = [{'path':ch10_path,'stub':False}]
-            self.metaflow_upload_basket(upload_dict,
+            basket_upload_path = self.metaflow_upload_basket(upload_dict,
                                         self.bucket_name,
                                        'ch10',
                                         label = ch10_name,
                                         metadata = {'ch10name': ch10_name})
+            
+            print(f'basket successfully uploaded: {basket_upload_path}')
 
             os.remove(ch10_path)
 

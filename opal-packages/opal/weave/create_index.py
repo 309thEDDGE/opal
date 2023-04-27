@@ -67,14 +67,13 @@ def create_index_from_s3(root_dir, schema_path):
     index_dict['address'] = []
     index_dict['storage_type'] = []
 
-    for basket_json in basket_jsons:
-        basket_address = f's3://{basket_json}'
-        with opal_s3fs.open(basket_address, 'rb') as file:
+    for basket_json_address in basket_jsons:
+        with opal_s3fs.open(basket_json_address, 'rb') as file:
             basket_dict = json.load(file)
-            validate_basket_dict(basket_dict, schema, basket_address)
+            validate_basket_dict(basket_dict, schema, basket_json_address)
             for field in basket_dict.keys():
                 index_dict[field].append(basket_dict[field])
-            index_dict['address'].append(os.path.dirname(basket_address))
+            index_dict['address'].append(os.path.dirname(basket_json_address))
             index_dict['storage_type'].append('s3')
 
     index = pd.DataFrame(index_dict)
