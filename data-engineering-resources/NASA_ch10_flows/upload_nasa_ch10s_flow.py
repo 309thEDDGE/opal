@@ -9,8 +9,8 @@ class NASAc10UploadFlow(opal.flow.OpalFlowSpec):
     '''Defines a flow to upload NASA ch10 files.'''
     
     ch10_directory = metaflow.Parameter(
-        "ch10_directory", help="Directory name with chapter 10 files to be uploaded."
-                               "Given by opal-data/<ch10_directory>", 
+        "ch10_directory", help="Directory name containing chapter 10 files to be uploaded, "
+                               "given by opal-data/<ch10_directory>", 
         required=False,
         default = "telemetry-demo-data"
     )
