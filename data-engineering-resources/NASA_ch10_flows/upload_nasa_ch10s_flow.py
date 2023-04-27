@@ -8,10 +8,11 @@ import opal.flow
 class NASAc10UploadFlow(opal.flow.OpalFlowSpec):
     '''Defines a flow to upload NASA ch10 files.'''
     
-    ch10_directory_date = metaflow.Parameter(
-        "ch10_directory_date", help="Date of NASA ch10 upload (YYYY_MM_DD).", 
+    ch10_directory = metaflow.Parameter(
+        "ch10_directory", help="Directory name with chapter 10 files to be uploaded."
+                               "Given by opal-data/<ch10_directory>", 
         required=False,
-        default = "2023_03_20"
+        default = "telemetry-demo-data"
     )
 
     n = metaflow.Parameter(
@@ -27,15 +28,6 @@ class NASAc10UploadFlow(opal.flow.OpalFlowSpec):
         help="Name of the s3 bucket where data will be uploaded.",
         required=False,
         default='basket-data'
-    )
-    
-    old = metaflow.Parameter(
-        "old",
-        help="Pass this parameter if you want the old ch10s from govcloud."
-             "This will override anything passed in to ch10_directory_date.",
-        required=False,
-        default=None,
-        type = bool
     )
 
     @step
@@ -56,11 +48,7 @@ class NASAc10UploadFlow(opal.flow.OpalFlowSpec):
         '''
         opal_data = s3fs.S3FileSystem(anon = True, client_kwargs = {'region_name':'us-gov-west-1'})
 
-        
-        if self.old is None:
-            self.ch10_source_path = f's3://opal-data/nasa_ch10s_{self.ch10_directory_date}/'
-        else:
-            self.ch10_source_path = 's3://opal-data/telemetry-demo-data'
+        self.ch10_source_path = f's3://opal-data/{self.ch10_directory}'
 
         if not opal_data.exists(self.ch10_source_path):
             raise FileNotFoundError(f"Ch10 Source Directory Not Found: {self.ch10_source_path}")
