@@ -13,6 +13,7 @@ import argparse
 import os
 import pandas as pd
 import opal.flow
+import opal.weave.config as config
 
 
 #validate basket keys and value data types on read in
@@ -30,16 +31,12 @@ def validate_basket_dict(basket_dict, schema, basket_address):
 
     #TODO: validate types for each key
 
-def create_index_from_s3(root_dir, schema_path):
+def create_index_from_s3(root_dir):
     """
     Recursively parse an s3 bucket and create an index using basket_manifest.json found therein
     
     Parameters:
         root_dir: path to s3 bucket
-        schema_path: path to json file that specifies structure of basket_manifest.json
-                    Currently the contents of this file just contain an array
-                    of the keys found in basket_manifest.json, such as 
-                    ["uuid", "upload_time", "parent_uuids", "basket_type", "label"]
         
     Returns:
         index: a pandas DataFrame with columns
@@ -51,17 +48,13 @@ def create_index_from_s3(root_dir, schema_path):
     #check parameter data types
     if not isinstance(root_dir, str):
         raise TypeError(f"'root_dir' must be a string: '{root_dir}'")
-        
-    if not isinstance(schema_path, str):
-        raise TypeError(f"'schema_path' must be a string: '{schema_path}'")
     
     opal_s3fs = opal.flow.minio_s3fs()
 
     basket_jsons = [x for x in opal_s3fs.find(root_dir) if x.endswith('basket_manifest.json')]
 
     index_dict = {}
-    with open(schema_path) as f:
-        schema = json.load(f)
+    schema = config.index_schema()
     for key in schema:
         index_dict[key] = []
     index_dict['address'] = []
