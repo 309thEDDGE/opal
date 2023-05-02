@@ -1,11 +1,7 @@
 '''
 USAGE:
-python create_index.py <root_dir> <schema_path>
+python create_index.py <root_dir> 
     root_dir: the root directory of s3 you wish to build your index off of
-    schema_path: the path to a local json file that specifies basket keys.
-                Currently the contents of this file just contain an array
-                of the keys found in basket_manifest.json, such as 
-                ["uuid", "upload_time", "parent_uuids", "basket_type", "label"]
 '''
 
 import json
@@ -23,7 +19,7 @@ def validate_basket_dict(basket_dict, schema, basket_address):
     
     Parameters:
         basket_dict: dictionary read in from basket_manifest.json in minio
-        schema: loaded from schema_path passed to create_index_from_s3
+        schema: defined in config.py, and returned from the function index_schema()
         basket_address: basket in question. Passed here to create better error message
     """
     if list(basket_dict.keys()) != schema:
@@ -84,13 +80,7 @@ if __name__ == "__main__":
         type=str,
         help="the root directory of s3 you wish to build your index off of",
     )
-    argparser.add_argument(
-        "schema_path",
-        metavar="<schema_path>",
-        type=str,
-        help="the path to a local json file that specifies basket keys",
-    )
 
     args = argparser.parse_args()
 
-    create_index_from_s3(args.root_dir, args.schema_path).to_parquet('index.parquet')
+    create_index_from_s3(args.root_dir).to_parquet('index.parquet')
