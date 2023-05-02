@@ -163,8 +163,8 @@ class NASAch10TranslateFlow(opal.flow.OpalFlowSpec):
             upload_dicts.append({'path':f.path,'stub':False})
 
         return self.metaflow_upload_basket( upload_dicts,
-                                            self.bucket_name,
                                             f'ch10_translated_{self.data_type}',
+                                            self.bucket_name,
                                             label = self.ch10_name,
                                             parent_ids = parent_ids,
                                             metadata = translate_metadata)

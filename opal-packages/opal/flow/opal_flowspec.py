@@ -42,8 +42,8 @@ class OpalFlowSpec(FlowSpec):
 
     def metaflow_upload_basket(self, 
                                upload_dict, 
-                               bucket_name, 
                                basket_type,
+                               bucket_name = 'basket-data', 
                                label = '',
                                parent_ids = [],
                                metadata = {}):

@@ -67,8 +67,8 @@ class NASAc10UploadFlow(opal.flow.OpalFlowSpec):
 
             upload_dict = [{'path':ch10_path,'stub':False}]
             basket_upload_path = self.metaflow_upload_basket(upload_dict,
-                                        self.bucket_name,
                                        'ch10',
+                                        self.bucket_name,
                                         label = ch10_name,
                                         metadata = {'ch10name': ch10_name})
             
