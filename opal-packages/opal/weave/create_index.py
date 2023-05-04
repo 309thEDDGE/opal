@@ -9,7 +9,7 @@ import argparse
 import os
 import pandas as pd
 import opal.flow
-import opal.weave.config as config
+from opal.weave import config
 
 
 #validate basket keys and value data types on read in
