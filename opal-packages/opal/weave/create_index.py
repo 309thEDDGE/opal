@@ -11,17 +11,18 @@ import pandas as pd
 import opal.flow
 from opal.weave import config
 
-
 #validate basket keys and value data types on read in
-def validate_basket_dict(basket_dict, schema, basket_address):
+def validate_basket_dict(basket_dict, basket_address):
     """
     validate the basket_manifest.json has the correct structure
     
     Parameters:
         basket_dict: dictionary read in from basket_manifest.json in minio
-        schema: defined in config.py, and returned from the function index_schema()
         basket_address: basket in question. Passed here to create better error message
     """
+    
+    schema = config.index_schema()
+    
     if list(basket_dict.keys()) != schema:
         raise ValueError(f'basket found at {basket_address} has invalid schema')
 
@@ -49,8 +50,10 @@ def create_index_from_s3(root_dir):
 
     basket_jsons = [x for x in opal_s3fs.find(root_dir) if x.endswith('basket_manifest.json')]
 
-    index_dict = {}
     schema = config.index_schema()
+    
+    index_dict = {}
+    
     for key in schema:
         index_dict[key] = []
     index_dict['address'] = []
@@ -59,7 +62,7 @@ def create_index_from_s3(root_dir):
     for basket_json_address in basket_jsons:
         with opal_s3fs.open(basket_json_address, 'rb') as file:
             basket_dict = json.load(file)
-            validate_basket_dict(basket_dict, schema, basket_json_address)
+            validate_basket_dict(basket_dict, basket_json_address)
             for field in basket_dict.keys():
                 index_dict[field].append(basket_dict[field])
             index_dict['address'].append(os.path.dirname(basket_json_address))
