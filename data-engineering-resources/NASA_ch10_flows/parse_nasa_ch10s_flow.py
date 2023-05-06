@@ -134,11 +134,11 @@ class NASAch10ParseFlow(opal.flow.OpalFlowSpec):
             upload_dicts.append({'path':f.path,'stub':False})
 
         basket_upload_path = self.metaflow_upload_basket(upload_dicts,
-                                                        self.bucket_name,
-                                                       'ch10_parsed',
-                                                        label = ch10_name,
-                                                        parent_ids = parent_uuids,
-                                                        metadata = tip_metadata)
+                                                         'ch10_parsed',
+                                                         self.bucket_name,
+                                                         label = ch10_name,
+                                                         parent_ids = parent_uuids,
+                                                         metadata = tip_metadata)
         
         return basket_upload_path
     
@@ -160,7 +160,7 @@ class NASAch10ParseFlow(opal.flow.OpalFlowSpec):
     def parse_ch10s(self):
         '''Download ch10, parse it, upload the output of tip_parse'''
         #create an index, get the address column, and get the first n addresses
-        index = create_index_from_s3(self.bucket_name, 'schema.json')
+        index = create_index_from_s3(self.bucket_name)
         ch10_index = index[index['basket_type'] == 'ch10']
         self.ch10_baskets = ch10_index['address']
         if self.n is not None and self.n < len(self.ch10_baskets):

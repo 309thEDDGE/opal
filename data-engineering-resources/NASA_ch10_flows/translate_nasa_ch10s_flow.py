@@ -163,8 +163,8 @@ class NASAch10TranslateFlow(opal.flow.OpalFlowSpec):
             upload_dicts.append({'path':f.path,'stub':False})
 
         return self.metaflow_upload_basket( upload_dicts,
-                                            self.bucket_name,
                                             f'ch10_translated_{self.data_type}',
+                                            self.bucket_name,
                                             label = self.ch10_name,
                                             parent_ids = parent_ids,
                                             metadata = translate_metadata)
@@ -193,7 +193,7 @@ class NASAch10TranslateFlow(opal.flow.OpalFlowSpec):
         self.local_dir_path = self.local_dir.name
         self.dts_folder = os.path.join(self.local_dir_path, 'local_dts_folder')
         os.mkdir(self.dts_folder)
-        self.basket_index = create_index_from_s3(self.bucket_name, 'schema.json')
+        self.basket_index = create_index_from_s3(self.bucket_name)
         self.next(self.get_dts_file)
         
     @step

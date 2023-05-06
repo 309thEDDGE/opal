@@ -42,8 +42,8 @@ class OpalFlowSpec(FlowSpec):
 
     def metaflow_upload_basket(self, 
                                upload_dict, 
-                               bucket_name, 
                                basket_type,
+                               bucket_name = 'basket-data', 
                                label = '',
                                parent_ids = [],
                                metadata = {}):
@@ -55,9 +55,9 @@ class OpalFlowSpec(FlowSpec):
         metadata['metaflow_manifest'] = {'run_id': current.run_id,
                                          'flow_name': current.flow_name}
 
-        basket_upload_path = weave_upload(upload_dict, 
-                                          bucket_name, 
+        basket_upload_path = weave_upload(upload_dict,
                                           basket_type,
+                                          bucket_name,
                                           label = label,
                                           parent_ids = parent_ids,
                                           metadata = metadata)
