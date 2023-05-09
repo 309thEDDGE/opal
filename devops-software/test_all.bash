@@ -15,6 +15,7 @@ OPAL_ROOT=${OPAL_ROOT:-${DEFAULT_OPAL_ROOT}}
 VERBOSE=""
 EXCLUDE_SINGLEUSER=""
 EXCLUDE_PYTEST=""
+EXCLUDE_OPS_PYTEST=""
 EXCLUDE_TIP=""
 EXCLUDE_STARTER_NOTEBOOKS=""
 EXCLUDE_TEST_NOTEBOOKS=""
@@ -22,7 +23,7 @@ EXCLUDE_DEMO_NOTEBOOKS="EXCLUDE_DEMO_NOTEBOOKS"
 
 ARGS=$(getopt -o "ahe:o:v" \
     --long "acceptance,environment:,help,opal-root:,verbose,no-singleuser," \
-    --long "no-torch,no-tip,no-pytest,no-starter-notebooks,no-test-notebooks," \
+    --long "no-torch,no-tip,no-pytest,no-ops-pytest,no-starter-notebooks,no-test-notebooks," \
     --long "no-demo-notebooks,no-notebooks" \
     -n test_all \
     -- "$@" )
@@ -38,6 +39,7 @@ usage:
        [--no-singleuser]
        [--no-tip]
        [--no-pytest]
+       [--no-ops-pytest]
        [--no-starter-notebooks]
        [--no-test-notebooks]
        [--no-demo-notebooks]
@@ -57,6 +59,7 @@ usage:
     --no-singleuser    no tests run for singleuser conda environment
     --no-tip           no tests run for TIP
     --no-pytest        no pytest tests are run
+    --no-ops-pytest    no devops pytests are run
     --no-starter-notebooks        do not run starter notebooks
     --no-test-notebooks           do not run test notebooks
     --no-demo-notebooks           do not run demo notebooks
@@ -117,6 +120,11 @@ case "$1" in
 
     --no-pytest)
         EXCLUDE_PYTEST="EXCLUDE_PYTEST"
+        shift
+        ;;
+        
+    --no-ops-pytest)
+        EXCLUDE_OPS_PYTEST="EXCLUDE_OPS_PYTEST"
         shift
         ;;
 
@@ -204,6 +212,15 @@ pytest_tests() {
         echo "pytest tests (singleuser)"
         ${SINGLEUSER_BIN} -m pytest -vv ${OPAL_ROOT}/opal-packages \
             || fail "pytest (singleuser)"
+    fi
+}
+
+pytest_ops_tests() {
+    if [[ -z "${EXCLUDE_SINGLEUSER}" ]] ; then
+        echo
+        echo "pytest ops tests (singleuser)"
+        ${SINGLEUSER_BIN} -m pytest -vv ${OPAL_ROOT}/devops-software/ops-tests \
+            || fail "pytest ops test (singleuser)"
     fi
 }
 
@@ -353,6 +370,7 @@ main() {
     fix_prerequisites
     [[ -z "${EXCLUDE_TIP}" ]] && tip_tests
     [[ -z "${EXCLUDE_PYTEST}" ]] && pytest_tests
+    [[ -z "${EXCLUDE_OPS_PYTEST}" ]] && pytest_ops_tests
     [[ -z "${EXCLUDE_STARTER_NOTEBOOKS}" ]] && \
         starter_notebook_tests ${OPAL_ROOT}/starter-notebooks
     [[ -z "${EXCLUDE_TEST_NOTEBOOKS}" ]] && \
