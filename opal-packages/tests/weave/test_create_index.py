@@ -43,12 +43,6 @@ class TestCreateIndex():
                       f'{self.test_bucket}/{self.basket_type}/one_deeper/4321', "4321",
                       self.basket_type, ["333","444"], label = 'my label')
 
-        #make schema.json for testing purposes
-        self.schema_path = os.path.join(self.local_dir_path, 'schema.json')
-        with open(self.schema_path, 'w') as f:
-            json.dump(['uuid', 'upload_time', 'parent_uuids', 'basket_type', 'label'], f)
-
-
 
     def teardown_class(self):
         '''
@@ -60,12 +54,7 @@ class TestCreateIndex():
     def test_root_dir_is_string(self):
         with pytest.raises(TypeError, match =
                            f"'root_dir' must be a string"):
-            create_index_from_s3(765,self.schema_path)
-            
-    def test_schema_path_is_string(self):
-        with pytest.raises(TypeError, match =
-                           f"'schema_path' must be a string"):
-            create_index_from_s3(f'{self.test_bucket}',4321)
+            create_index_from_s3(765)
 
     def test_correct_index(self):
         '''
@@ -76,12 +65,12 @@ class TestCreateIndex():
                  'parent_uuids': [["1111", "2222"], ["333","444"]],
                  'basket_type': 'test_basket_type',
                  'label': 'my label',
-                 'address': [f's3://{self.test_bucket}/{self.basket_type}/1234',
-                             f's3://{self.test_bucket}/{self.basket_type}/one_deeper/4321'],
+                 'address': [f'{self.test_bucket}/{self.basket_type}/1234',
+                             f'{self.test_bucket}/{self.basket_type}/one_deeper/4321'],
                  'storage_type': 's3'}
         truth_index = pd.DataFrame(truth_index_dict)
 
-        minio_index = create_index_from_s3(f'{self.test_bucket}',self.schema_path)
+        minio_index = create_index_from_s3(f'{self.test_bucket}')
 
         #check that the indexes match, ignoring 'upload_time'
         assert (truth_index == minio_index).drop(columns = ['upload_time']).all().all()
@@ -112,18 +101,11 @@ class TestCreateIndex():
         self.opal_s3fs.upload(basket_path, f'{self.test_bucket}/{self.basket_type}/5678/basket_manifest.json')
 
         with pytest.raises(ValueError, match = 'basket found at'):
-            minio_index = create_index_from_s3(f'{self.test_bucket}',self.schema_path)
+            minio_index = create_index_from_s3(f'{self.test_bucket}')
 
     def test_root_dir_does_not_exist(self):
         '''
         try to create an index in a bucket that doesn't exist, check that it throws an error
         '''
         with pytest.raises(FileNotFoundError, match = 'The specified bucket does not exist'):
-            minio_index = create_index_from_s3('NOT-A-BUCKET',self.schema_path)
-
-    def test_schema_path_does_not_exist(self):
-        '''
-        run create index with an invalid schema path, check that it throws an error
-        '''
-        with pytest.raises(FileNotFoundError, match = 'No such file or directory'):
-            minio_index = create_index_from_s3(f'{self.test_bucket}','NOT-A-SCHEMA')
+            minio_index = create_index_from_s3('NOT-A-BUCKET')

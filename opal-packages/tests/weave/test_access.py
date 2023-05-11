@@ -41,7 +41,7 @@ class TestUpload():
                     'something': 'stupid'
         }
         label = 'my label'
-        self.upload_path = upload(self.upload_items, self.bucket_name, self.basket_type,
+        self.upload_path = upload(self.upload_items, self.basket_type, self.bucket_name,
               parent_ids, metadata, label)
         
         uploaded_files = self.opal_s3fs.ls(self.upload_path)
@@ -66,7 +66,7 @@ class TestUpload():
         bucket_name = 7
         
         with pytest.raises(TypeError, match = f"'bucket_name' must be a string: '{bucket_name}'"):
-            upload(self.upload_items, bucket_name, self.basket_type)
+            upload(self.upload_items, self.basket_type, bucket_name)
     
     
         

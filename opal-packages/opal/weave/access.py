@@ -4,8 +4,8 @@ import os
 from opal.weave.uploader import upload_basket
 
 def upload(upload_items,
-           bucket_name,
            basket_type,
+           bucket_name = 'basket-data',
            parent_ids = [],
            metadata = {},
            label = ''):

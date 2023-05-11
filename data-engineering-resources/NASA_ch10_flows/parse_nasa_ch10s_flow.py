@@ -134,11 +134,11 @@ class NASAch10ParseFlow(opal.flow.OpalFlowSpec):
             upload_dicts.append({'path':f.path,'stub':False})
 
         basket_upload_path = self.metaflow_upload_basket(upload_dicts,
-                                                        self.bucket_name,
-                                                       'ch10_parsed',
-                                                        label = ch10_name,
-                                                        parent_ids = parent_uuids,
-                                                        metadata = tip_metadata)
+                                                         'ch10_parsed',
+                                                         self.bucket_name,
+                                                         label = ch10_name,
+                                                         parent_ids = parent_uuids,
+                                                         metadata = tip_metadata)
         
         return basket_upload_path
     
