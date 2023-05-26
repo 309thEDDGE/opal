@@ -2,6 +2,7 @@ import os
 import s3fs
 import tempfile
 import metaflow
+from random import sample
 from metaflow import step, card
 import opal.flow
 
@@ -29,6 +30,15 @@ class NASAc10UploadFlow(opal.flow.OpalFlowSpec):
         required=False,
         default='basket-data'
     )
+
+    metadata_selection = {
+        'pilot': ['Luke', 'Wedge', 'Stephen', 'Danny', 'Rob', 'Carl', 'Ken', 'Trevor', 'Tanner'],
+        'call_sign': ['Red-5', 'Gold-1', 'Silver-9', 'Diamond', 'Poppy', 'Saphire', 'T-Rex', 'Slick'],
+        'tail_number': ['143', '563', '757', '363', '876', '352', '847', '153', '987'],
+        'flight_program': ['1.0.2', '1.1.3', '2.4.2', '2.8.3', '3.4.1'],
+        'platform': ['A-Wing', 'B-Wing', 'X-Wing', 'Y-Wing', 'T-Wing'],
+        'test_flight': ['Alpha', 'Bravo', 'Charlie', 'Delta', None]
+    }
 
     @step
     def start(self):
@@ -65,12 +75,19 @@ class NASAc10UploadFlow(opal.flow.OpalFlowSpec):
             ch10_path = os.path.join(self.local_dir_path, ch10_filename)
             opal_data.get(name, ch10_path)
 
+            metadata_in = {}
+            for key, value in self.metadata_selection.items():
+                selection = sample(self.metadata_selection[key], 1)[0]
+                if selection != None:
+                    metadata_in[key] = selection
+            metadata_in['ch10name'] = ch10_name
+        
             upload_dict = [{'path':ch10_path,'stub':False}]
             basket_upload_path = self.metaflow_upload_basket(upload_dict,
                                                              'ch10',
                                                              self.bucket_name,
                                                              label = ch10_name,
-                                                             metadata = {'ch10name': ch10_name})
+                                                             metadata = metadata_in)
             
             print(f'basket successfully uploaded: {basket_upload_path}')
 
