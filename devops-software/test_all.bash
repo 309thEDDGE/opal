@@ -7,9 +7,6 @@ TEST_ENV="${TEST_ENV:-}"
 #change jupyter setup
 SINGLEUSER_BIN=/opt/conda/envs/singleuser/bin/python3
 SINGLEUSER_ENV=conda-env-singleuser-py
-TORCH_BIN=/opt/conda/envs/torch/bin/python3
-TORCH_ENV=conda-env-torch-py
-
 
 DEFAULT_OPAL_ROOT="$(readlink -e "$(dirname $0)/..")"
 OPAL_ROOT=${OPAL_ROOT:-${DEFAULT_OPAL_ROOT}}
@@ -17,8 +14,8 @@ OPAL_ROOT=${OPAL_ROOT:-${DEFAULT_OPAL_ROOT}}
 #flags
 VERBOSE=""
 EXCLUDE_SINGLEUSER=""
-EXCLUDE_TORCH=""
 EXCLUDE_PYTEST=""
+EXCLUDE_OPS_PYTEST=""
 EXCLUDE_TIP=""
 EXCLUDE_STARTER_NOTEBOOKS=""
 EXCLUDE_TEST_NOTEBOOKS=""
@@ -26,7 +23,7 @@ EXCLUDE_DEMO_NOTEBOOKS="EXCLUDE_DEMO_NOTEBOOKS"
 
 ARGS=$(getopt -o "ahe:o:v" \
     --long "acceptance,environment:,help,opal-root:,verbose,no-singleuser," \
-    --long "no-torch,no-tip,no-pytest,no-starter-notebooks,no-test-notebooks," \
+    --long "no-torch,no-tip,no-pytest,no-ops-pytest,no-starter-notebooks,no-test-notebooks," \
     --long "no-demo-notebooks,no-notebooks" \
     -n test_all \
     -- "$@" )
@@ -40,9 +37,9 @@ usage:
        [-o|--opal-root OPAL_ROOT]
        [-e|--environment TEST_ENVIRONMENT_NAME]
        [--no-singleuser]
-       [--no-torch]
        [--no-tip]
        [--no-pytest]
+       [--no-ops-pytest]
        [--no-starter-notebooks]
        [--no-test-notebooks]
        [--no-demo-notebooks]
@@ -60,9 +57,9 @@ usage:
     -o|--opal-root     set directory where opal project is installed
     -v|--verbose       print backtrace for failing notebooks
     --no-singleuser    no tests run for singleuser conda environment
-    --no-torch         no tests run for torch conda environment
     --no-tip           no tests run for TIP
     --no-pytest        no pytest tests are run
+    --no-ops-pytest    no devops pytests are run
     --no-starter-notebooks        do not run starter notebooks
     --no-test-notebooks           do not run test notebooks
     --no-demo-notebooks           do not run demo notebooks
@@ -116,11 +113,6 @@ case "$1" in
         shift
         ;;
 
-    --no-torch)
-        EXCLUDE_TORCH="EXCLUDE_TORCH"
-        shift
-        ;;
-
     --no-tip)
         EXCLUDE_TIP="EXCLUDE_TIP"
         shift
@@ -128,6 +120,11 @@ case "$1" in
 
     --no-pytest)
         EXCLUDE_PYTEST="EXCLUDE_PYTEST"
+        shift
+        ;;
+        
+    --no-ops-pytest)
+        EXCLUDE_OPS_PYTEST="EXCLUDE_OPS_PYTEST"
         shift
         ;;
 
@@ -194,27 +191,12 @@ EOF
         fi
     fi
 
-    if [[ -z "${EXCLUDE_TORCH}" ]] ; then
-        if ! ${TORCH_BIN} -c "${opal_verification}" &> /dev/null ; then
-            echo "OPAL packages not found in torch environment"
-            ${TORCH_BIN} -m pip install ${OPAL_ROOT}/opal-packages
-            if (( $? != 0 )) ; then
-                echo "failed to install opal packages"
-                exit 1
-            fi
-        fi
-    fi
-
     # make sure the kernels are accessible
     # this will overwrite ~/local/share/jupyter/kernels/{singleuser,torch}/
     echo
     echo "Setting up conda kernels for automated testing."
     if [[ -z "${EXCLUDE_SINGLEUSER}" ]] ; then
         ${SINGLEUSER_BIN} -m ipykernel install --name ${SINGLEUSER_ENV} --user
-    fi
-
-    if [[ -z "${EXCLUDE_TORCH}" ]] ; then
-        ${TORCH_BIN} -m ipykernel install --name ${TORCH_ENV} --user
     fi
 }
 
@@ -231,12 +213,14 @@ pytest_tests() {
         ${SINGLEUSER_BIN} -m pytest -vv ${OPAL_ROOT}/opal-packages \
             || fail "pytest (singleuser)"
     fi
+}
 
-    if [[ -z "${EXCLUDE_TORCH}" ]] ; then
+pytest_ops_tests() {
+    if [[ -z "${EXCLUDE_SINGLEUSER}" ]] ; then
         echo
-        echo "pytest tests (torch)"
-        ${TORCH_BIN} -m pytest -vv ${OPAL_ROOT}/opal-packages \
-            || fail "pytest (singleuser)"
+        echo "pytest ops tests (singleuser)"
+        ${SINGLEUSER_BIN} -m pytest -vv ${OPAL_ROOT}/devops-software/ops-tests \
+            || fail "pytest ops test (singleuser)"
     fi
 }
 
@@ -318,14 +302,6 @@ starter_notebook_tests() {
             --name "starter_notebook_tests (singleuser)" \
             ${notebooks[@]}
     fi
-
-    if [[ -z "${EXCLUDE_TORCH}" ]] ; then
-        echo
-        echo "running starter notebooks (torch)"
-        notebook_tests --conda_environment ${TORCH_ENV} \
-            --name "starter_notebook_tests (torch)" \
-            ${notebooks[@]}
-    fi
 }
 
 #these might have tests that can only be run in one environment
@@ -352,15 +328,6 @@ test_notebook_tests() {
             --name "test_notebook_tests (singleuser)" \
             "${singleuser_notebooks[@]}"
     fi
-
-    if [[ -z "${EXCLUDE_TORCH}" ]] ; then
-        echo
-        echo "running test notebooks (torch)"
-        torch_notebooks+=( "${common_notebooks[@]}" )
-        notebook_tests --conda_environment ${TORCH_ENV} \
-            --name "test_notebook_tests (torch)" \
-            "${torch_notebooks[@]}"
-    fi
 }
 
 demo_notebook_tests() {
@@ -384,15 +351,6 @@ demo_notebook_tests() {
             --name "demo_notebook_tests (singleuser)" \
             "${singleuser_notebooks[@]}"
     fi
-
-    if [[ -z "${EXCLUDE_TORCH}" ]] ; then
-        echo
-        echo "running demo notebooks (torch)"
-        torch_notebooks+=( "${common_notebooks[@]}" )
-        notebook_tests --conda_environment ${TORCH_ENV} \
-            --name "demo_notebook_tests (torch)" \
-            "${torch_notebooks[@]}"
-    fi
 }
 
 test_default_environment() {
@@ -412,6 +370,7 @@ main() {
     fix_prerequisites
     [[ -z "${EXCLUDE_TIP}" ]] && tip_tests
     [[ -z "${EXCLUDE_PYTEST}" ]] && pytest_tests
+    [[ -z "${EXCLUDE_OPS_PYTEST}" ]] && pytest_ops_tests
     [[ -z "${EXCLUDE_STARTER_NOTEBOOKS}" ]] && \
         starter_notebook_tests ${OPAL_ROOT}/starter-notebooks
     [[ -z "${EXCLUDE_TEST_NOTEBOOKS}" ]] && \
