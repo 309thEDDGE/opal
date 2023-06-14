@@ -2,7 +2,7 @@ import metaflow
 import os
 from .flow_script_utils import publish_run, get_metaflow_s3_folder_upload_structure
 from metaflow import FlowSpec, current
-from opal.weave.access import upload as weave_upload
+from weave.access import upload as weave_upload
 
 # OPAL-specific subclass of metaflow's FlowSpec base class
 # provides a simplified interface for uploading and a direct
