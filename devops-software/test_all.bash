@@ -216,7 +216,7 @@ weave_tests() {
     if [[ -z "${EXCLUDE_SINGLEUSER}" ]] ; then
         echo
         echo "pytest weave (singleuser)"
-        ${SINGLEUSER_BIN} -m pytest -vv weave/tests/ \
+        ${SINGLEUSER_BIN} -m pytest --pyargs weave -vv \
             || fail "pytest (singleuser)"
     fi
 }
