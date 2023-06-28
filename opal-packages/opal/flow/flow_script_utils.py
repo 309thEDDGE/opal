@@ -9,7 +9,8 @@ from .other_utils import minio_s3fs
 # where key is some string (may be path-like)
 # and path is the path to a *file*. This function
 # constructs that list for a directory.
-# Details here: https://docs.metaflow.org/metaflow/data#store-multiple-objects-or-files
+# Details here:
+# https://docs.metaflow.org/metaflow/data#store-multiple-objects-or-files
 def get_metaflow_s3_folder_upload_structure(folder, key):
     folder = os.path.abspath(os.path.expanduser(folder))
     root = os.path.basename(folder)

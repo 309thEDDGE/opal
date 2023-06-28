@@ -74,7 +74,8 @@ class Instance:
         if joined_parts is not None:
             query_str += f"?{joined_parts}"
 
-        r = requests.get(query_str, headers={"Authorization": "token %s" % self.token})
+        r = requests.get(query_str,
+                         headers={"Authorization": "token %s" % self.token})
 
         json_response = r.json()
         return Results(json_response)
