@@ -27,7 +27,7 @@ class NASAch10ParseFlow(opal.flow.OpalFlowSpec):
         required=False,
         default='basket-data'
     )
-    
+
     def extract_metadata(self):
         """Gather tip metadata into one dict."""
         # scan for metadata files, save the output as a dict in tip_metadata
@@ -45,20 +45,20 @@ class NASAch10ParseFlow(opal.flow.OpalFlowSpec):
         # we should find at least one
         if not tip_metadata:
             raise Exception("No tip metadata file found. Tip might be broken.")
-            
+
         return tip_metadata
-    
+
     def parse_basket(self, basket):
         '''Parse a ch10 and extract metadata.
-        
+
         Given a basket, check that there exists only one ch10 in that basket.
         Then download the basket to a temporary directory, and parse said ch10.
         Extract the generated metadata to a single dict, and return that metadata.
-        
+
         Parameters
         ----------
         basket (str): path to a basket of type ch10 in s3.
-        
+
         Returns
         -------
         tip_metadata (dict): all metadata generated during tip_parse run
@@ -89,32 +89,32 @@ class NASAch10ParseFlow(opal.flow.OpalFlowSpec):
                 "4",
             ]
         )
-        
+
         os.remove(ch10_path)
 
         tip_metadata = self.extract_metadata()
-        
+
         return tip_metadata
-    
+
     def upload_parsed_basket(self, basket, tip_metadata):
         '''Generate basket dicts and upload contents.
-        
+
         From s3, get the name of the ch10 and uuid of the parent basket. Then
         create a list of dicts for everything in the temporary directory as is
         compatible with metaflow_upload_basket. Upload the basket with this
         gathered information
-        
+
         Parameters
         ----------
         basket (str): path to a basket of type ch10 in s3.
         tip_metadata (dict): all metadata generated during tip_parse run
                              aggregated into one dict.
-                             
+
         Returns
         -------
         basket_upload_path (str): path to where the basket was uploaded,
                                   returned from self.metaflow_upload_basket
-        '''        
+        '''
         #get ch10_name from basket_metadata
         with self.opal_s3fs.open(os.path.join(basket, 'basket_metadata.json'), 'rb') as file:
             basket_metadata = json.load(file)
@@ -139,9 +139,9 @@ class NASAch10ParseFlow(opal.flow.OpalFlowSpec):
                                                          label = ch10_name,
                                                          parent_ids = parent_uuids,
                                                          metadata = tip_metadata)
-        
+
         return basket_upload_path
-    
+
 
     @step
     def start(self):
@@ -149,7 +149,7 @@ class NASAch10ParseFlow(opal.flow.OpalFlowSpec):
         #create temporary directory to put data files locally
         self.temp_dir = tempfile.TemporaryDirectory()
         self.local_dir_path = self.temp_dir.name
-        
+
         self.opal_s3fs = s3fs.S3FileSystem(client_kwargs = {'endpoint_url': os.environ['S3_ENDPOINT']})
         if not self.opal_s3fs.exists(self.bucket_name):
             raise FileNotFoundError(f"Specified Bucket Not Found: {self.bucket_name}")
@@ -170,17 +170,17 @@ class NASAch10ParseFlow(opal.flow.OpalFlowSpec):
         for i, basket in enumerate(self.ch10_baskets):
             try:
                 print(f'{i+1}/{num_ch10s}: {basket}')
-                
+
                 tip_metadata = self.parse_basket(basket)
 
                 basket_upload_path = self.upload_parsed_basket(basket, tip_metadata)
-                        
+
                 print(f'basket successfully parsed and uploaded: {basket_upload_path}')
-                        
+
             except Exception as e:
                 print(e)
                 print(f'basket failed: {basket})')
-                
+
             finally:
                 # clean out temp_dir
                 for f in os.scandir(self.local_dir_path):
