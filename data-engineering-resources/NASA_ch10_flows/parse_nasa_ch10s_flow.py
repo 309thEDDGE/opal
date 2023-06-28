@@ -8,7 +8,7 @@ import json
 import metaflow
 from metaflow import step, card
 import opal.flow
-from weave.create_index import create_index_from_s3
+from weave.index import create_index_from_s3
 
 class NASAch10ParseFlow(opal.flow.OpalFlowSpec):
     '''Defines a flow to parse NASA ch10 files.'''
