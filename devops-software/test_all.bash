@@ -17,6 +17,7 @@ EXCLUDE_SINGLEUSER=""
 EXCLUDE_PYTEST=""
 EXCLUDE_OPS_PYTEST=""
 EXCLUDE_TIP=""
+EXCLUDE_WEAVE=""
 EXCLUDE_STARTER_NOTEBOOKS=""
 EXCLUDE_TEST_NOTEBOOKS=""
 EXCLUDE_DEMO_NOTEBOOKS="EXCLUDE_DEMO_NOTEBOOKS"
@@ -117,6 +118,11 @@ case "$1" in
         EXCLUDE_TIP="EXCLUDE_TIP"
         shift
         ;;
+        
+    --no-weave)
+        EXCLUDE_WEAVE="EXCLUDE_WEAVE"
+        shift
+        ;;
 
     --no-pytest)
         EXCLUDE_PYTEST="EXCLUDE_PYTEST"
@@ -204,6 +210,15 @@ tip_tests() {
     echo
     echo "TIP tests"
     tests || fail "TIP tests failed."
+}
+
+weave_tests() {
+    if [[ -z "${EXCLUDE_SINGLEUSER}" ]] ; then
+        echo
+        echo "pytest weave (singleuser)"
+        ${SINGLEUSER_BIN} -m pytest --pyargs weave -vv \
+            || fail "pytest (singleuser)"
+    fi
 }
 
 pytest_tests() {
@@ -369,6 +384,7 @@ test_default_environment() {
 main() {
     fix_prerequisites
     [[ -z "${EXCLUDE_TIP}" ]] && tip_tests
+    [[ -z "${EXCLUDE_WEAVE}" ]] && weave_tests
     [[ -z "${EXCLUDE_PYTEST}" ]] && pytest_tests
     [[ -z "${EXCLUDE_OPS_PYTEST}" ]] && pytest_ops_tests
     [[ -z "${EXCLUDE_STARTER_NOTEBOOKS}" ]] && \
