@@ -3,11 +3,11 @@ import metaflow
 
 flow_name = sys.argv[1]
 
-# The TipMidnightCatalog flow saves an instance of the 
+# The TipMidnightCatalog flow saves an instance of the
 # MidnightCatalogGenertor class as an artifact. When unpickling
-# a run of TipMidnightCatalog, the MidnightCatalogGenertor class 
+# a run of TipMidnightCatalog, the MidnightCatalogGenertor class
 # needs to have been imported so that the MidnightCatalogGenerator object
-# can be unpickled. 
+# can be unpickled.
 if flow_name == 'TipMidnightCatalog':
     sys.path.append('/home/jovyan/opal/data-engineering-resources')
     from midnight_catalog_utils import MidnightCatalogGenerator
