@@ -2,7 +2,7 @@ import metaflow
 import os
 from .flow_script_utils import publish_run, get_metaflow_s3_folder_upload_structure
 from metaflow import FlowSpec, current
-from weave.access import upload as weave_upload
+from weave import upload as weave_upload
 
 # OPAL-specific subclass of metaflow's FlowSpec base class
 # provides a simplified interface for uploading and a direct
@@ -47,7 +47,7 @@ class OpalFlowSpec(FlowSpec):
                                label = '',
                                parent_ids = [],
                                metadata = {}):
-        '''A wrapper for metaflow to use weave.access.upload and track ids.'''
+        '''A wrapper for metaflow to use weave.upload and track ids.'''
 
         if not hasattr(self, "basket_uploads"):
             self.basket_uploads = []
