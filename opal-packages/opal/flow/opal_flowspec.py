@@ -40,10 +40,10 @@ class OpalFlowSpec(FlowSpec):
 
             s3.put_files(upload)
 
-    def metaflow_upload_basket(self
-                               upload_dict
+    def metaflow_upload_basket(self,
+                               upload_dict,
                                basket_type,
-                               bucket_name = 'basket-data
+                               bucket_name = 'basket-data',
                                label = '',
                                parent_ids = [],
                                metadata = {}):
