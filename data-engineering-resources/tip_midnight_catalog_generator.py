@@ -94,7 +94,7 @@ class TipMidnightCatalog(opal.flow.OpalFlowSpec):
                     self.generator.add(
                         [{"column": m["dataset"], "value": file}], run.data.ch10_name
                     )
-                    
+
             if self.test:
                 break
 
@@ -132,7 +132,7 @@ class TipMidnightCatalog(opal.flow.OpalFlowSpec):
                         [{"column": m["dataset"], "value": file}],
                         run.data.parse_run.data.ch10_name,
                     )
-                    
+
             if self.test:
                 break
 

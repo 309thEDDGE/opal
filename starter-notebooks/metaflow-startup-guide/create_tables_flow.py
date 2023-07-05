@@ -13,13 +13,13 @@ class CreateTablesFlow(OpalFlowSpec):
         help="Length Of Table 1 to Create",
         required=True
     )
-    
+
     table_length_2 = metaflow.Parameter(
         "table_length_2",
         help="Length Of Table 2 to Create",
         required=True
     )
-    
+
     @step # the '@step' decorator is required
     def start(self): # 'start' and 'end' steps are required
         # Comments like the one below are attached to their function
@@ -29,11 +29,11 @@ class CreateTablesFlow(OpalFlowSpec):
         """
         self.n_int_1 = int(self.table_length_1)
         self.n_int_2 = int(self.table_length_2)
-        
+
         # self.next points to the next step
-        self.next(self.create_tables) 
-        
-    @step 
+        self.next(self.create_tables)
+
+    @step
     def create_tables(self):
         """
         Make tables
@@ -46,9 +46,9 @@ class CreateTablesFlow(OpalFlowSpec):
         self.path2 = os.path.join(temp_file_2, f"table_2.parquet")
         df1.to_parquet(self.path1)
         df2.to_parquet(self.path2)
-        
+
         self.next(self.upload_tables)
-        
+
     @step
     def upload_tables(self):
         """
@@ -60,18 +60,18 @@ class CreateTablesFlow(OpalFlowSpec):
         self.upload(self.path1, "table1")
         self.upload(self.path2, "table2") 
         self.next(self.save_metadata)
-        
+
     @step
     def save_metadata(self):
         """
         Save Metadata
         """
-        # All items saved to self will 
+        # All items saved to self will
         # be saved with the Flow Run
         self.metadata_1 = 1
         self.metadata_dictionary = {'key': 1}
         self.next(self.end)
-        
+
     @card # The card decorator saves data to generate a nice HTML file
     @step
     def end(self):

@@ -8,7 +8,7 @@ import opal.flow
 
 class NASAc10UploadFlow(opal.flow.OpalFlowSpec):
     '''Defines a flow to upload NASA ch10 files.'''
-    
+
     ch10_directory = metaflow.Parameter(
         "ch10_directory", help="Directory name containing chapter 10 files to be uploaded, "
                                "given by opal-data/<ch10_directory>", 
@@ -52,7 +52,7 @@ class NASAc10UploadFlow(opal.flow.OpalFlowSpec):
     @step
     def upload_ch10s(self):
         '''Upload NASA ch10s from govcloud datastore.
-        
+
         get all the NASA ch10 files from a govcloud datastore,
         and upload them one at a time to the OPAL datastore
         '''
@@ -81,14 +81,14 @@ class NASAc10UploadFlow(opal.flow.OpalFlowSpec):
                 if selection != None:
                     metadata_in[key] = selection
             metadata_in['ch10name'] = ch10_name
-        
+
             upload_dict = [{'path':ch10_path,'stub':False}]
             basket_upload_path = self.metaflow_upload_basket(upload_dict,
                                                              'ch10',
                                                              self.bucket_name,
                                                              label = ch10_name,
                                                              metadata = metadata_in)
-            
+
             print(f'basket successfully uploaded: {basket_upload_path}')
 
             os.remove(ch10_path)
