@@ -1,7 +1,8 @@
 import metaflow
-from .flow_script_utils import publish_run, get_metaflow_s3_folder_upload_structure
-from metaflow import FlowSpec
 import os
+from .flow_script_utils import publish_run, get_metaflow_s3_folder_upload_structure
+from metaflow import FlowSpec, current
+from weave import upload as weave_upload
 
 # OPAL-specific subclass of metaflow's FlowSpec base class
 # provides a simplified interface for uploading and a direct
@@ -9,7 +10,7 @@ import os
 class OpalFlowSpec(FlowSpec):
 
     # uploads a file or folder, and puts the s3 path of the
-    # uploaded object into `self.data_files` 
+    # uploaded object into `self.data_files`
     def upload(self, path, key=None):
         if not hasattr(self, "data_files"):
             self.data_files = {}
@@ -28,7 +29,7 @@ class OpalFlowSpec(FlowSpec):
             if self.s3root.startswith("s3://"):
                 cut_out = len("s3://")
                 self.s3root = self.s3root[cut_out:]
-            
+
             # get file or directory upload structure for metaflow's S3 thing
             if os.path.isdir(path):
                 upload = get_metaflow_s3_folder_upload_structure(path, key)
@@ -38,6 +39,32 @@ class OpalFlowSpec(FlowSpec):
                 self.data_files[key] = os.path.join(self.s3root, base)
 
             s3.put_files(upload)
+
+    def metaflow_upload_basket(self,
+                               upload_dict,
+                               basket_type,
+                               bucket_name = 'basket-data',
+                               label = '',
+                               parent_ids = [],
+                               metadata = {}):
+        '''A wrapper for metaflow to use weave.upload and track ids.'''
+
+        if not hasattr(self, "basket_uploads"):
+            self.basket_uploads = []
+
+        metadata['metaflow_manifest'] = {'run_id': current.run_id,
+                                         'flow_name': current.flow_name}
+
+        basket_upload_path = weave_upload(upload_dict,
+                                          basket_type,
+                                          bucket_name,
+                                          label = label,
+                                          parent_ids = parent_ids,
+                                          metadata = metadata)
+
+        self.basket_uploads.append(basket_upload_path)
+
+        return basket_upload_path
 
     # simple wrapper for flow_script_utils.publish_run
     def publish(self, **kwargs):

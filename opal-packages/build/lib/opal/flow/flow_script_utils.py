@@ -9,7 +9,8 @@ from .other_utils import minio_s3fs
 # where key is some string (may be path-like)
 # and path is the path to a *file*. This function
 # constructs that list for a directory.
-# Details here: https://docs.metaflow.org/metaflow/data#store-multiple-objects-or-files
+# Details here:
+# https://docs.metaflow.org/metaflow/data#store-multiple-objects-or-files
 def get_metaflow_s3_folder_upload_structure(folder, key):
     folder = os.path.abspath(os.path.expanduser(folder))
     root = os.path.basename(folder)
@@ -21,11 +22,12 @@ def get_metaflow_s3_folder_upload_structure(folder, key):
             p = pl.Path(r, f)
             # get the path to `f` just after `root`
             idx = p.parts.index(root)
-            rpath = pl.Path(key, *p.parts[idx+1:])
+            rpath = pl.Path(key, *p.parts[idx + 1 :])
             # key to this file `f` is `key` + (`f` path up to `root`)
             out.append((str(rpath), str(p)))
 
-    return out 
+    return out
+
 
 # generic upload interace for files or directories
 def upload(run, path, key=None):
@@ -43,12 +45,11 @@ def upload(run, path, key=None):
     else:
         raise Exception(f"Argument is not a file or a directory: {path}")
 
+
 # simple enough - should this run be published?
 def should_publish_run(run):
-    return (
-        run.successful and
-        not "no_data" in run.tags
-    )
+    return run.successful and not "no_data" in run.tags
+
 
 # publish a metaflow run to the catalog.
 # force=True will ignore results of should_publish_run
@@ -57,17 +58,18 @@ def publish_run(run, force=False):
         return False
 
     # get the data in run
-    run_data = { k:v.data for k, v in run.data._artifacts.items() }
+    run_data = {k: v.data for k, v in run.data._artifacts.items()}
 
     # elevate some metaflow metadata because it's useful
-    run_data['created_at'] = str(run._created_at)
-    run_data['tags'] = run._tags
-    run_data['id'] = run.id
-    run_data['successful'] = run.successful
-    run_data['flow_id'] = run.parent.id
+    run_data["created_at"] = str(run._created_at)
+    run_data["tags"] = run._tags
+    run_data["id"] = run.id
+    run_data["successful"] = run.successful
+    run_data["flow_id"] = run.parent.id
 
     # publish to catalog
-    return opal.publish.publish(run_data['id'], run_data['flow_id'], run_data)
+    return opal.publish.publish(run_data["id"], run_data["flow_id"], run_data)
+
 
 def delete_run_data(run):
     # tag as "no data"
