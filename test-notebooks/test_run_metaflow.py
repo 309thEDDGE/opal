@@ -1,6 +1,8 @@
+import os
+import pytest
+
 import metaflow
 import opal.flow
-import pytest
 
 
 @pytest.fixture
@@ -57,3 +59,11 @@ def test_size_of_ex_run_data_files(opal_flow_and_run):
     ex_run_df_shape = ex_run_df.shape
 
     assert ex_run_df_shape == (64, 1)
+
+
+def test_pip_install_metaflow():
+    exit_status = os.system('pip list | grep metaflow')
+    import metaflow
+    # An exit status of 0 indicates a successful execution
+    assert exit_status == 0
+
