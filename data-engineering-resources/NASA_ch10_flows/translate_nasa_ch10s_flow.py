@@ -9,7 +9,7 @@ import json
 import shutil
 from metaflow import step, card
 import opal.flow
-from weave.index import create_index_from_s3
+import weave
 
 class NASAch10TranslateFlow(opal.flow.OpalFlowSpec):
     '''Defines a flow to translate parsed NASA ch10 files.''' 
@@ -193,7 +193,10 @@ class NASAch10TranslateFlow(opal.flow.OpalFlowSpec):
         self.local_dir_path = self.local_dir.name
         self.dts_folder = os.path.join(self.local_dir_path, 'local_dts_folder')
         os.mkdir(self.dts_folder)
-        self.basket_index = create_index_from_s3(self.bucket_name)
+        self.basket_index = weave.index.create_index.create_index_from_fs(
+            root_dir=self.bucket_name,
+            file_system=opal_s3fs,
+        )
         self.next(self.get_dts_file)
 
     @step

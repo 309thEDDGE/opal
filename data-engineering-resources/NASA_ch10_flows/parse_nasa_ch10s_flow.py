@@ -8,7 +8,7 @@ import json
 import metaflow
 from metaflow import step, card
 import opal.flow
-from weave.index import create_index_from_s3
+import weave
 
 class NASAch10ParseFlow(opal.flow.OpalFlowSpec):
     '''Defines a flow to parse NASA ch10 files.'''
@@ -160,7 +160,8 @@ class NASAch10ParseFlow(opal.flow.OpalFlowSpec):
     def parse_ch10s(self):
         '''Download ch10, parse it, upload the output of tip_parse'''
         #create an index, get the address column, and get the first n addresses
-        index = create_index_from_s3(self.bucket_name)
+        index = weave.index.create_index.create_index_from_fs(root_dir=self.bucket_name,
+                                                file_system=self.opal_s3fs)
         ch10_index = index[index['basket_type'] == 'ch10']
         self.ch10_baskets = ch10_index['address']
         if self.n is not None and self.n < len(self.ch10_baskets):
