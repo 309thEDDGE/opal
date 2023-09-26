@@ -173,7 +173,6 @@ class NASAch10ParseFlow(opal.flow.OpalFlowSpec):
                 print(f'{i+1}/{num_ch10s}: {basket}')
 
                 tip_metadata = self.parse_basket(basket)
-
                 basket_upload_path = self.upload_parsed_basket(basket, tip_metadata)
 
                 print(f'basket successfully parsed and uploaded: {basket_upload_path}')
