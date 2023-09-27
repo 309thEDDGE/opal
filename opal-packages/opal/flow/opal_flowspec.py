@@ -2,7 +2,7 @@ import metaflow
 import os
 from .flow_script_utils import publish_run, get_metaflow_s3_folder_upload_structure
 from metaflow import FlowSpec, current
-from weave import upload as weave_upload
+import weave
 
 # OPAL-specific subclass of metaflow's FlowSpec base class
 # provides a simplified interface for uploading and a direct
@@ -37,7 +37,7 @@ class OpalFlowSpec(FlowSpec):
             elif os.path.isfile(path):
                 upload = [(base, path)]
                 self.data_files[key] = os.path.join(self.s3root, base)
-
+            
             s3.put_files(upload)
 
     def metaflow_upload_basket(self,
@@ -54,13 +54,15 @@ class OpalFlowSpec(FlowSpec):
 
         metadata['metaflow_manifest'] = {'run_id': current.run_id,
                                          'flow_name': current.flow_name}
-
-        basket_upload_path = weave_upload(upload_dict,
-                                          basket_type,
-                                          bucket_name,
-                                          label = label,
-                                          parent_ids = parent_ids,
-                                          metadata = metadata)
+        
+        basket_upload_path = weave.upload.UploadBasket(
+            upload_items=upload_dict,
+            basket_type=basket_type,
+            pantry_path=bucket_name,
+            label=label,
+            parent_ids=parent_ids,
+            metadata=metadata,
+        ).get_upload_path()
 
         self.basket_uploads.append(basket_upload_path)
 

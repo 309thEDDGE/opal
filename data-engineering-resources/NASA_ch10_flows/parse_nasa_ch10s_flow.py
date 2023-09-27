@@ -86,7 +86,7 @@ class NASAch10ParseFlow(opal.flow.OpalFlowSpec):
                 "-o",
                 self.local_dir_path,
                 "-t",
-                "4",
+                "4"
             ]
         )
 
@@ -174,12 +174,11 @@ class NASAch10ParseFlow(opal.flow.OpalFlowSpec):
 
                 tip_metadata = self.parse_basket(basket)
                 basket_upload_path = self.upload_parsed_basket(basket, tip_metadata)
-
                 print(f'basket successfully parsed and uploaded: {basket_upload_path}')
 
             except Exception as e:
                 print(e)
-                print(f'basket failed: {basket})')
+                print(f'basket failed: {basket}')
 
             finally:
                 # clean out temp_dir
