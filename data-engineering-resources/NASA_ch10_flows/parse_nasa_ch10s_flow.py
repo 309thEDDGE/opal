@@ -86,7 +86,7 @@ class NASAch10ParseFlow(opal.flow.OpalFlowSpec):
                 "-o",
                 self.local_dir_path,
                 "-t",
-                "4"
+                "4",
             ]
         )
 
@@ -159,11 +159,11 @@ class NASAch10ParseFlow(opal.flow.OpalFlowSpec):
     @step
     def parse_ch10s(self):
         '''Download ch10, parse it, upload the output of tip_parse'''
-        #create an index, get the address column, and get the first n addresses
-        index = weave.index.create_index.create_index_from_fs(root_dir=self.bucket_name,
-                                                file_system=self.opal_s3fs)
-        ch10_index = index[index['basket_type'] == 'ch10']
-        self.ch10_baskets = ch10_index['address']
+        # Create an index, get the ch10 baskets, and get the first n addresses
+        index = weave.IndexPandas(file_system=self.opal_s3fs, pantry_path=self.bucket_name)
+        index.generate_index()
+        ch10_index_df = index.get_baskets_of_type("ch10")
+        self.ch10_baskets = ch10_index_df['address']
         if self.n is not None and self.n < len(self.ch10_baskets):
             self.ch10_baskets = self.ch10_baskets[:self.n]
 
