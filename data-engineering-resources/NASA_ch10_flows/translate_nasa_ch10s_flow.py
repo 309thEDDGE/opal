@@ -9,7 +9,7 @@ import json
 import shutil
 from metaflow import step, card
 import opal.flow
-from weave.index import create_index_from_s3
+import weave
 
 class NASAch10TranslateFlow(opal.flow.OpalFlowSpec):
     '''Defines a flow to translate parsed NASA ch10 files.''' 
@@ -122,7 +122,7 @@ class NASAch10TranslateFlow(opal.flow.OpalFlowSpec):
                 "--thread_count",
                 "3",
                 "--output_path",
-                self.local_translate_path
+                self.local_translate_path,
             ]
         )
 
@@ -193,7 +193,10 @@ class NASAch10TranslateFlow(opal.flow.OpalFlowSpec):
         self.local_dir_path = self.local_dir.name
         self.dts_folder = os.path.join(self.local_dir_path, 'local_dts_folder')
         os.mkdir(self.dts_folder)
-        self.basket_index = create_index_from_s3(self.bucket_name)
+        self.basket_index = weave.IndexPandas(
+            file_system=opal_s3fs,
+            pantry_path=self.bucket_name,
+        )
         self.next(self.get_dts_file)
 
     @step
@@ -202,13 +205,14 @@ class NASAch10TranslateFlow(opal.flow.OpalFlowSpec):
         opal_s3fs = s3fs.S3FileSystem(client_kwargs =
                                       {'endpoint_url': os.environ['S3_ENDPOINT']})
 
-        dts_index = self.basket_index[self.basket_index['basket_type'] ==
-                                      f'NASA_{self.data_type}_DTS'].copy()
+        dts_index_df = self.basket_index.get_baskets_of_type(
+            f"NASA_{self.data_type}_DTS"
+        )
 
-        dts_index['time'] = pd.to_datetime(dts_index['upload_time'],
+        dts_index_df['time'] = pd.to_datetime(dts_index_df['upload_time'],
                                            format='%m/%d/%Y %H:%M:%S')
 
-        dts_basket_address = dts_index.loc[dts_index['time'].idxmax()]['address']
+        dts_basket_address = dts_index_df.loc[dts_index_df['time'].idxmax()]['address']
 
         s3_dts_path = f'{dts_basket_address}/NASA_{self.data_type}_DTS.yaml'
         if not opal_s3fs.exists(s3_dts_path):
@@ -242,9 +246,9 @@ class NASAch10TranslateFlow(opal.flow.OpalFlowSpec):
         if not opal_s3fs.exists(self.bucket_name):
             raise FileNotFoundError(f"Specified Bucket Not Found: " \
                                     f"{self.bucket_name}")
-        ch10_index = self.basket_index[self.basket_index['basket_type'] ==
-                                       'ch10_parsed']
-        self.ch10_parsed_baskets = ch10_index['address']
+
+        ch10_index_df = self.basket_index.get_baskets_of_type("ch10_parsed")
+        self.ch10_parsed_baskets = ch10_index_df['address']
 
         if self.n is not None:
             self.ch10_parsed_baskets = self.ch10_parsed_baskets[:self.n]

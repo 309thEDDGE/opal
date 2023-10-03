@@ -8,7 +8,7 @@ import json
 import metaflow
 from metaflow import step, card
 import opal.flow
-from weave.index import create_index_from_s3
+import weave
 
 class NASAch10ParseFlow(opal.flow.OpalFlowSpec):
     '''Defines a flow to parse NASA ch10 files.'''
@@ -159,10 +159,11 @@ class NASAch10ParseFlow(opal.flow.OpalFlowSpec):
     @step
     def parse_ch10s(self):
         '''Download ch10, parse it, upload the output of tip_parse'''
-        #create an index, get the address column, and get the first n addresses
-        index = create_index_from_s3(self.bucket_name)
-        ch10_index = index[index['basket_type'] == 'ch10']
-        self.ch10_baskets = ch10_index['address']
+        # Create an index, get the ch10 baskets, and get the first n addresses
+        index = weave.IndexPandas(file_system=self.opal_s3fs, pantry_path=self.bucket_name)
+        index.generate_index()
+        ch10_index_df = index.get_baskets_of_type("ch10")
+        self.ch10_baskets = ch10_index_df['address']
         if self.n is not None and self.n < len(self.ch10_baskets):
             self.ch10_baskets = self.ch10_baskets[:self.n]
 
@@ -172,14 +173,12 @@ class NASAch10ParseFlow(opal.flow.OpalFlowSpec):
                 print(f'{i+1}/{num_ch10s}: {basket}')
 
                 tip_metadata = self.parse_basket(basket)
-
                 basket_upload_path = self.upload_parsed_basket(basket, tip_metadata)
-
                 print(f'basket successfully parsed and uploaded: {basket_upload_path}')
 
             except Exception as e:
                 print(e)
-                print(f'basket failed: {basket})')
+                print(f'basket failed: {basket}')
 
             finally:
                 # clean out temp_dir
