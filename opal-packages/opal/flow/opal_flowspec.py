@@ -39,7 +39,6 @@ class OpalFlowSpec(FlowSpec):
             elif os.path.isfile(path):
                 upload = [(base, path)]
                 self.data_files[key] = os.path.join(self.s3root, base)
-            
             s3.put_files(upload)
 
     def metaflow_upload_basket(self,
