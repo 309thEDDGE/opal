@@ -79,7 +79,8 @@ class NASAch10ParseFlow(opal.flow.OpalFlowSpec):
         #run tip parse
         subprocess.run(
             [
-                "tip_parse",
+                "tip",
+                "parse",
                 ch10_path,
                 "-L",
                 "off",
