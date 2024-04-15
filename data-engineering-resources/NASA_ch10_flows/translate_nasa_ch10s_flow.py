@@ -52,15 +52,6 @@ class NASAch10TranslateFlow(opal.flow.OpalFlowSpec):
     def extract_metadata(self):
         '''Gather metadata from translation.'''
         translate_metadata = {}
-        # start_path = self.local_dir_path # current directory
-        # for path,dirs,files in os.walk(start_path):
-        #     for filename in files:
-        #         print(os.path.join(path,filename))
-
-        # log_file = os.path.join(self.local_translate_path, "tip_translate_1553.log")
-        # with open(log_file, 'r') as log_file:
-        #     for line in log_file:
-        #         print(line.strip())
         directories = [d for d in os.listdir(self.local_translate_path) if os.path.isdir(os.path.join(self.local_translate_path, d))]
         if len(directories) == 1:
             new_directory_name = directories[0]
@@ -131,7 +122,6 @@ class NASAch10TranslateFlow(opal.flow.OpalFlowSpec):
         # "--output_path" specifies the path for translated output
         subprocess.run(
             [
-                #tip_exec: tip_translate_1553 and tip_translate_arinc
                 *tip_exec.split("_"),
                 self.local_parsed_dir,
                 self.local_dts_path,
