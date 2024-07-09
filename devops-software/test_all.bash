@@ -295,6 +295,7 @@ notebook_tests() {
      
         # If the notebook name contains the string "gpu" ...
         if echo "$nb" | grep -q "gpu"; then
+        
             # Check if the nvidia-smi command exists and is executable.
             if ! command -v nvidia-smi &> /dev/null; then
                 echo "SKIPPING (No Nvidia GPU Avaialble)"
