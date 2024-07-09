@@ -60,6 +60,7 @@ usage:
     -v|--verbose       print backtrace for failing notebooks
     --no-singleuser    no tests run for singleuser conda environment
     --no-tip           no tests run for TIP
+    --no-weave         no tests run for weave 
     --no-pytest        no pytest tests are run
     --no-ops-pytest    no devops pytests are run
     --no-starter-notebooks        do not run starter notebooks
