@@ -24,7 +24,7 @@ EXCLUDE_DEMO_NOTEBOOKS="EXCLUDE_DEMO_NOTEBOOKS"
 
 ARGS=$(getopt -o "ahe:o:v" \
     --long "acceptance,environment:,help,opal-root:,verbose,no-singleuser," \
-    --long "no-torch,no-tip,no-pytest,no-ops-pytest,no-starter-notebooks,no-test-notebooks," \
+    --long "no-torch,no-tip,no-weave,no-pytest,no-ops-pytest,no-starter-notebooks,no-test-notebooks," \
     --long "no-demo-notebooks,no-notebooks" \
     -n test_all \
     -- "$@" )
@@ -39,6 +39,7 @@ usage:
        [-e|--environment TEST_ENVIRONMENT_NAME]
        [--no-singleuser]
        [--no-tip]
+       [--no-weave]
        [--no-pytest]
        [--no-ops-pytest]
        [--no-starter-notebooks]
@@ -59,6 +60,7 @@ usage:
     -v|--verbose       print backtrace for failing notebooks
     --no-singleuser    no tests run for singleuser conda environment
     --no-tip           no tests run for TIP
+    --no-weave         no tests run for weave 
     --no-pytest        no pytest tests are run
     --no-ops-pytest    no devops pytests are run
     --no-starter-notebooks        do not run starter notebooks
@@ -272,6 +274,7 @@ notebook_tests() {
 
     local notebooks=($@)
     local failures=0
+    local skipped=0
     local output_dir=$(mktemp -d "${TMPDIR:-/tmp/}/notebook_tests.XXXXXXX")
     for i in ${!notebooks[@]} ; do
         local f=${notebooks[$i]}
@@ -279,6 +282,29 @@ notebook_tests() {
         local out="${output_dir}/${nb}.out"
 
         stdbuf -o0 echo -n "[$((i + 1))/${count}] ${nb} ... "
+
+        # If the notebook name contains the string "Dask" ...
+        if echo "$nb" | grep -q "Dask"; then
+           
+            # Check if dask-gateway is installed
+            if ! pip show dask-gateway &> /dev/null; then
+                echo "SKIPPING (dask-gateway is not installed)"
+                skipped=$(( ${skipped} + 1 ))
+                continue
+            fi
+        fi
+     
+        # If the notebook name contains the string "gpu" ...
+        if echo "$nb" | grep -q "gpu"; then
+        
+            # Check if the nvidia-smi command exists and is executable.
+            if ! command -v nvidia-smi &> /dev/null; then
+                echo "SKIPPING (No Nvidia GPU Avaialble)"
+                skipped=$(( ${skipped} + 1 ))
+                continue
+             fi
+         fi
+        
         TEST="${TEST}" TEST_ENV="${TEST_ENV}" \
         jupyter nbconvert --execute "$f" \
             --to notebook \
@@ -300,7 +326,11 @@ notebook_tests() {
     done
 
     if (( ${failures} != 0 )) ; then
-        fail "some notebooks in ${name} test failed"
+        fail "${failures} notebook(s) in ${name} test failed"
+    fi
+
+    if (( ${skipped} != 0 )) ; then
+        echo "${skipped} notebook(s) in ${name} test was/were skipped"
     fi
 }
 
