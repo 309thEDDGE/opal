@@ -237,7 +237,6 @@ dda_tests() {
         ${SINGLEUSER_BIN} -m pip install ${tmp_dda_dir}/.[api]
         ${SINGLEUSER_BIN} -m pytest -vv ${tmp_dda_dir}/data_discovery_api/tests \
             || fail "pytest (singleuser)"
-        ${SINGLEUSER_BIN} -m pip -y uninstall data-discovery-api
 
         # deactivate the virtual env and delete
         deactivate
