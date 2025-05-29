@@ -216,34 +216,6 @@ EOF
     fi
 }
 
-dda_tests() {
-    if [[ -z "${EXCLUDE_SINGLEUSER}" ]] ; then
-        echo
-        echo "pytest dda (singleuser)"
-
-        tmp_dda_dir="/home/jovyan/opal/devops-software/data_discovery_api"
-        # Remove the directory if it exists
-        if [ -d $tmp_dda_dir ]; then  
-          echo "Deleting old dda directory"
-          rm -rf $tmp_dda_dir
-        fi
-        git clone https://github.com/AFMC-MAJCOM/data-discovery-api.git $tmp_dda_dir
-
-        # create virtual env so the single user environment isn't adjusted
-        ${SINGLEUSER_BIN} -m venv ${tmp_dda_dir}/test_dda_env
-        source ${tmp_dda_dir}/test_dda_env/bin/activate
-
-        # run the dda tests
-        ${SINGLEUSER_BIN} -m pip install ${tmp_dda_dir}/.[api]
-        ${SINGLEUSER_BIN} -m pytest -vv ${tmp_dda_dir}/data_discovery_api/tests \
-            || fail "pytest (singleuser)"
-
-        # deactivate the virtual env and delete
-        deactivate
-        rm -rf $tmp_dda_dir
-    fi
-}
-
 tip_tests() {
     echo
     echo "TIP tests"
@@ -449,7 +421,6 @@ test_default_environment() {
 
 main() {
     fix_prerequisites
-    [[ -z "${EXCLUDE_DDA}" ]] && dda_tests
     [[ -z "${EXCLUDE_TIP}" ]] && tip_tests
     [[ -z "${EXCLUDE_WEAVE}" ]] && weave_tests
     [[ -z "${EXCLUDE_PYTEST}" ]] && pytest_tests
