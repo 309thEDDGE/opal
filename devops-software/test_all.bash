@@ -16,7 +16,6 @@ VERBOSE=""
 EXCLUDE_SINGLEUSER=""
 EXCLUDE_PYTEST=""
 EXCLUDE_OPS_PYTEST=""
-EXCLUDE_DDA=""
 EXCLUDE_TIP=""
 EXCLUDE_WEAVE=""
 EXCLUDE_STARTER_NOTEBOOKS=""
@@ -25,7 +24,7 @@ EXCLUDE_DEMO_NOTEBOOKS="EXCLUDE_DEMO_NOTEBOOKS"
 
 ARGS=$(getopt -o "ahe:o:v" \
     --long "acceptance,environment:,help,opal-root:,verbose,no-singleuser," \
-    --long "no-torch,no-dda, no-tip,no-weave,no-pytest,no-ops-pytest," \
+    --long "no-torch,no-tip,no-weave,no-pytest,no-ops-pytest," \
     --long "no-starter-notebooks,no-test-notebooks,no-demo-notebooks,no-notebooks" \
     -n test_all \
     -- "$@" )
@@ -39,7 +38,6 @@ usage:
        [-o|--opal-root OPAL_ROOT]
        [-e|--environment TEST_ENVIRONMENT_NAME]
        [--no-singleuser]
-       [--no-dda]
        [--no-tip]
        [--no-weave]
        [--no-pytest]
@@ -61,7 +59,6 @@ usage:
     -o|--opal-root     set directory where opal project is installed
     -v|--verbose       print backtrace for failing notebooks
     --no-singleuser    no tests run for singleuser conda environment
-    --no-dda           no tests run for data-discovery-api
     --no-tip           no tests run for TIP
     --no-weave         no tests run for weave 
     --no-pytest        no pytest tests are run
@@ -116,11 +113,6 @@ case "$1" in
 
     --no-singleuser)
         EXCLUDE_SINGLEUSER="EXCLUDE_SINGLEUSER"
-        shift
-        ;;
-
-    --no-dda)
-        EXCLUDE_DDA="EXCLUDE_DDA"
         shift
         ;;
         
@@ -213,34 +205,6 @@ EOF
     echo "Setting up conda kernels for automated testing."
     if [[ -z "${EXCLUDE_SINGLEUSER}" ]] ; then
         ${SINGLEUSER_BIN} -m ipykernel install --name ${SINGLEUSER_ENV} --user
-    fi
-}
-
-dda_tests() {
-    if [[ -z "${EXCLUDE_SINGLEUSER}" ]] ; then
-        echo
-        echo "pytest dda (singleuser)"
-
-        tmp_dda_dir="/home/jovyan/opal/devops-software/data_discovery_api"
-        # Remove the directory if it exists
-        if [ -d $tmp_dda_dir ]; then  
-          echo "Deleting old dda directory"
-          rm -rf $tmp_dda_dir
-        fi
-        git clone https://github.com/AFMC-MAJCOM/data-discovery-api.git $tmp_dda_dir
-
-        # create virtual env so the single user environment isn't adjusted
-        ${SINGLEUSER_BIN} -m venv ${tmp_dda_dir}/test_dda_env
-        source ${tmp_dda_dir}/test_dda_env/bin/activate
-
-        # run the dda tests
-        ${SINGLEUSER_BIN} -m pip install ${tmp_dda_dir}/.[api]
-        ${SINGLEUSER_BIN} -m pytest -vv ${tmp_dda_dir}/data_discovery_api/tests \
-            || fail "pytest (singleuser)"
-
-        # deactivate the virtual env and delete
-        deactivate
-        rm -rf $tmp_dda_dir
     fi
 }
 
@@ -449,7 +413,6 @@ test_default_environment() {
 
 main() {
     fix_prerequisites
-    [[ -z "${EXCLUDE_DDA}" ]] && dda_tests
     [[ -z "${EXCLUDE_TIP}" ]] && tip_tests
     [[ -z "${EXCLUDE_WEAVE}" ]] && weave_tests
     [[ -z "${EXCLUDE_PYTEST}" ]] && pytest_tests
