@@ -16,7 +16,6 @@ VERBOSE=""
 EXCLUDE_SINGLEUSER=""
 EXCLUDE_PYTEST=""
 EXCLUDE_OPS_PYTEST=""
-EXCLUDE_DDA=""
 EXCLUDE_TIP=""
 EXCLUDE_WEAVE=""
 EXCLUDE_STARTER_NOTEBOOKS=""
@@ -25,7 +24,7 @@ EXCLUDE_DEMO_NOTEBOOKS="EXCLUDE_DEMO_NOTEBOOKS"
 
 ARGS=$(getopt -o "ahe:o:v" \
     --long "acceptance,environment:,help,opal-root:,verbose,no-singleuser," \
-    --long "no-torch,no-dda, no-tip,no-weave,no-pytest,no-ops-pytest," \
+    --long "no-torch,no-tip,no-weave,no-pytest,no-ops-pytest," \
     --long "no-starter-notebooks,no-test-notebooks,no-demo-notebooks,no-notebooks" \
     -n test_all \
     -- "$@" )
@@ -39,7 +38,6 @@ usage:
        [-o|--opal-root OPAL_ROOT]
        [-e|--environment TEST_ENVIRONMENT_NAME]
        [--no-singleuser]
-       [--no-dda]
        [--no-tip]
        [--no-weave]
        [--no-pytest]
@@ -61,7 +59,6 @@ usage:
     -o|--opal-root     set directory where opal project is installed
     -v|--verbose       print backtrace for failing notebooks
     --no-singleuser    no tests run for singleuser conda environment
-    --no-dda           no tests run for data-discovery-api
     --no-tip           no tests run for TIP
     --no-weave         no tests run for weave 
     --no-pytest        no pytest tests are run
@@ -116,11 +113,6 @@ case "$1" in
 
     --no-singleuser)
         EXCLUDE_SINGLEUSER="EXCLUDE_SINGLEUSER"
-        shift
-        ;;
-
-    --no-dda)
-        EXCLUDE_DDA="EXCLUDE_DDA"
         shift
         ;;
         
