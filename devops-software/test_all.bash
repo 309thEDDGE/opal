@@ -218,7 +218,7 @@ weave_tests() {
     if [[ -z "${EXCLUDE_SINGLEUSER}" ]] ; then
         echo
         echo "pytest weave (singleuser)"
-        ${SINGLEUSER_BIN} -m pytest --pyargs weave -vv \
+        ${SINGLEUSER_BIN} -m pytest --pyargs weave -vv -W ignore::DeprecationWarning \
             || fail "pytest (singleuser)"
     fi
 }
