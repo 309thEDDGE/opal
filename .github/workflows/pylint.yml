@@ -46,50 +46,16 @@ jobs:
         path: ./
         base: ${{ github.event.repository.default_branch }}
         head: HEAD
-        extra_args: --debug
-      continue-on-error: true  
+        extra_args: --debug  
 
 
-    # - name: TruffleHog OSS (unverified secrets)
-    #   continue-on-error: true   # ensures the step doesn’t fail the job
-    #   run: |
-    #     echo "🔎 Installing TruffleHog v3.90.6..."
-    #     curl -sSL https://github.com/trufflesecurity/trufflehog/releases/download/v3.90.6/trufflehog_3.90.6_linux_amd64.tar.gz -o trufflehog.tar.gz
-    #     tar -xzf trufflehog.tar.gz trufflehog
-    #     sudo mv trufflehog /usr/local/bin/trufflehog
-    #     trufflehog --version
-
-    #     echo "🔎 Scanning repository for unverified secrets..."
-    #     trufflehog filesystem ./ --json --no-verification \
-    #       | jq -r '
-    #           select(.Verified == false) |
-    #           "🔑 Unverified secret found!\nFile: \(.SourceMetadata.Data.path)\nLine: \(.SourceMetadata.Data.line)\nDetector: \(.DetectorName)\nRaw: \(.Raw)\n---"
-    #         '
-    - name: Install jq
-      run: sudo apt-get update && sudo apt-get install -y jq
-
-    - name: Show Unverified Secret (v3.90.6)
+    - name: Run TruffleHog with allowlist
       run: |
-        echo "🔎 Installing TruffleHog v3.90.6..."
-        sudo apt-get update && sudo apt-get install -y jq
-        curl -sSL https://github.com/trufflesecurity/trufflehog/releases/download/v3.90.6/trufflehog_3.90.6_linux_amd64.tar.gz -o trufflehog.tar.gz
-        tar -xzf trufflehog.tar.gz trufflehog
-        sudo mv trufflehog /usr/local/bin/trufflehog
-        trufflehog --version
+        docker run --rm -v "$PWD:/repo" -w /repo \
+          ghcr.io/trufflesecurity/trufflehog:latest \
+          git file:///repo --since-commit main --branch HEAD \
+          --json \
+          --allow "d38caecc0f1f71394643b0ebd986ad99df07243e" > trufflehog-output.json
 
-        echo "🔎 Running TruffleHog on local filesystem..."
-        output=$(trufflehog filesystem ./ --json --no-verification || true)
-
-        # Count truly unverified secrets
-        unverified_count=$(echo "$output" | jq -c 'select(.VerificationResult=="UNVERIFIED" or .Verified==false)' | wc -l)
-
-        if [ "$unverified_count" -gt 0 ]; then
-          echo "❌ $unverified_count unverified secret(s) found:"
-          echo "$output" | jq -r '
-            select(.VerificationResult=="UNVERIFIED" or .Verified==false) |
-            "🔑 Unverified secret found!\nFile: \(.SourceMetadata.Data.path // .SourceMetadata.Data.filename)\nLine: \(.SourceMetadata.Data.line)\nDetector: \(.DetectorName)\nRaw: \(.Raw)\n---"
-          '
-          exit 1
-        else
-          echo "✅ No unverified secrets found"
-        fi
+        echo "=== TruffleHog Findings ==="
+        cat trufflehog-output.json | jq .
