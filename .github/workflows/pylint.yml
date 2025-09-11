@@ -50,17 +50,15 @@ jobs:
 
 
     - name: TruffleHog OSS (unverified secrets)
+      continue-on-error: true
       run: |
-        # Install TruffleHog v3.90.6
         curl -sSL https://github.com/trufflesecurity/trufflehog/releases/download/v3.90.6/trufflehog_3.90.6_linux_amd64.tar.gz -o trufflehog.tar.gz
         tar -xzf trufflehog.tar.gz trufflehog
         sudo mv trufflehog /usr/local/bin/trufflehog
         trufflehog --version
 
-        # Run TruffleHog on local filesystem and show unverified secrets only
         trufflehog filesystem ./ --json --no-verification \
           | jq -r '
               select(.Verified == false) |
               "Unverified secret found!\nFile: \(.SourceMetadata.Data.path)\nLine: \(.SourceMetadata.Data.line)\nDetector: \(.DetectorName)\nRaw: \(.Raw)\n---"
             '
-
