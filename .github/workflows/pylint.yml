@@ -49,14 +49,20 @@ jobs:
         extra_args: --debug
 
 
-    - name: Run TruffleHog JSON
+    - name: Run TruffleHog
       run: |
-        trufflehog git file://. --json --no-verification > trufflehog_results.json
-
-    - name: Show Unverified Secrets
+        trufflehog git file://. --json --no-verification \
+          --base ${{ github.event.repository.default_branch }} \
+          --head HEAD > trufflehog_results.json
+          
+    - name: Show Unverified Secrets Only
       run: |
-        echo "🔍 Searching for unverified secrets..."
-        cat trufflehog_results.json | jq -r '
-          select(.Verified == false) |
-          "File: \(.SourceMetadata.Data.path)\nLine: \(.SourceMetadata.Data.line)\nDetector: \(.DetectorName)\nRaw: \(.Raw)\n---"
-        '
+        if [ -s trufflehog_results.json ]; then
+          echo "🔍 Unverified secrets found:"
+          cat trufflehog_results.json | jq -r '
+            select(.Verified == false) |
+            "File: \(.SourceMetadata.Data.path)\nLine: \(.SourceMetadata.Data.line)\nDetector: \(.DetectorName)\nRaw: \(.Raw)\n---"
+          '
+        else
+          echo "✅ No secrets found"
+        fi
