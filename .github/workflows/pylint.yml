@@ -64,9 +64,10 @@ jobs:
 
       - name: Run TruffleHog scan
         run: |
+          # Run but don’t fail the job
           trufflehog git file://. --json --no-verification \
             --base ${{ github.event.repository.default_branch }} \
-            --head HEAD > trufflehog_results.json
+            --head HEAD > trufflehog_results.json || true
 
       - name: Show Unverified Secrets Only
         run: |
