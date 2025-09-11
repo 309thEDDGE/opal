@@ -70,18 +70,18 @@ jobs:
 
     - name: Show Unverified Secret (v3.90.6)
       run: |
-        echo "🔎 Installing TruffleHog v3.90.6 for JSON output..."
+        echo "🔎 Installing TruffleHog v3.90.6..."
+        sudo apt-get update && sudo apt-get install -y jq
         curl -sSL https://github.com/trufflesecurity/trufflehog/releases/download/v3.90.6/trufflehog_3.90.6_linux_amd64.tar.gz -o trufflehog.tar.gz
         tar -xzf trufflehog.tar.gz trufflehog
         sudo mv trufflehog /usr/local/bin/trufflehog
         trufflehog --version
 
-        echo "🔎 Extracting unverified secrets from repository..."
-        # Run filesystem scan and capture output
-        output=$(trufflehog filesystem ./ --json --no-verification)
+        echo "🔎 Running TruffleHog on local filesystem..."
+        output=$(trufflehog filesystem ./ --json --no-verification || true)
 
-        # Count unverified secrets
-        unverified_count=$(echo "$output" | jq '[.[] | select(.VerificationResult=="UNVERIFIED" or .Verified==false)] | length')
+        # Count truly unverified secrets
+        unverified_count=$(echo "$output" | jq -c 'select(.VerificationResult=="UNVERIFIED" or .Verified==false)' | wc -l)
 
         if [ "$unverified_count" -gt 0 ]; then
           echo "❌ $unverified_count unverified secret(s) found:"
@@ -89,7 +89,7 @@ jobs:
             select(.VerificationResult=="UNVERIFIED" or .Verified==false) |
             "🔑 Unverified secret found!\nFile: \(.SourceMetadata.Data.path // .SourceMetadata.Data.filename)\nLine: \(.SourceMetadata.Data.line)\nDetector: \(.DetectorName)\nRaw: \(.Raw)\n---"
           '
-          exit 1  # fail job if any unverified secret exists
+          exit 1
         else
           echo "✅ No unverified secrets found"
         fi
