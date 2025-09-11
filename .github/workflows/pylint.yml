@@ -49,13 +49,13 @@ jobs:
         extra_args: --debug
       continue-on-error: true  
 
-    - name: Run TruffleHog with allowlist
+    - name: Run TruffleHog with allow
       run: |
         docker run --rm -v "$PWD:/repo" -w /repo \
           ghcr.io/trufflesecurity/trufflehog:latest \
           git file:///repo --since-commit main --branch HEAD \
           --json \
-          --allowlist /repo/trufflehog-allowlist.json > trufflehog-output.json
+          --allow "d38caecc0f1f71394643b0ebd986ad99df07243e" > trufflehog-output.json
 
         echo "=== TruffleHog Findings ==="
         cat trufflehog-output.json | jq .
