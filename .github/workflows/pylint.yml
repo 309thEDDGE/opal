@@ -5,6 +5,7 @@ on:
   pull_request:
     branches:
       - main
+      - test-old-commit2
 
 jobs:
   pylint:
