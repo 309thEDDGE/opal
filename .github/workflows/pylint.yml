@@ -53,3 +53,4 @@ jobs:
         cat trufflehog_results.json | jq -r '
           select(.path != null) |
           "SECRET in file: \(.path) at line: \(.lineNumber)\n  Detector: \(.detectorName)\n  Raw: \(.raw)\n"'
+        trufflehog git file://$(pwd)
