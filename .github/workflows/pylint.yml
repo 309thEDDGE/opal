@@ -65,6 +65,9 @@ jobs:
     #           select(.Verified == false) |
     #           "🔑 Unverified secret found!\nFile: \(.SourceMetadata.Data.path)\nLine: \(.SourceMetadata.Data.line)\nDetector: \(.DetectorName)\nRaw: \(.Raw)\n---"
     #         '
+    - name: Install jq
+      run: sudo apt-get update && sudo apt-get install -y jq
+
     - name: Show Unverified Secret (v3.90.6)
       run: |
         echo "🔎 Installing TruffleHog v3.90.6 for JSON output..."
