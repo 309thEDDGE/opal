@@ -49,20 +49,34 @@ jobs:
         extra_args: --debug
 
 
-    - name: Run TruffleHog
-      run: |
-        trufflehog git file://. --json --no-verification \
-          --base ${{ github.event.repository.default_branch }} \
-          --head HEAD > trufflehog_results.json
-          
-    - name: Show Unverified Secrets Only
-      run: |
-        if [ -s trufflehog_results.json ]; then
-          echo "🔍 Unverified secrets found:"
-          cat trufflehog_results.json | jq -r '
-            select(.Verified == false) |
-            "File: \(.SourceMetadata.Data.path)\nLine: \(.SourceMetadata.Data.line)\nDetector: \(.DetectorName)\nRaw: \(.Raw)\n---"
-          '
-        else
-          echo "✅ No secrets found"
-        fi
+  trufflehog:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Install TruffleHog v3.22.0
+        run: |
+          curl -sSL https://github.com/trufflesecurity/trufflehog/releases/download/v3.22.0/trufflehog_3.22.0_linux_amd64.tar.gz -o trufflehog.tar.gz
+          tar -xzf trufflehog.tar.gz trufflehog
+          sudo mv trufflehog /usr/local/bin/trufflehog
+          trufflehog --version
+
+      - name: Run TruffleHog scan
+        run: |
+          trufflehog git file://. --json --no-verification \
+            --base ${{ github.event.repository.default_branch }} \
+            --head HEAD > trufflehog_results.json
+
+      - name: Show Unverified Secrets Only
+        run: |
+          if [ -s trufflehog_results.json ]; then
+            echo "🔍 Unverified secrets found:"
+            cat trufflehog_results.json | jq -r '
+              select(.Verified == false) |
+              "File: \(.SourceMetadata.Data.path)\nLine: \(.SourceMetadata.Data.line)\nDetector: \(.DetectorName)\nRaw: \(.Raw)\n---"
+            '
+          else
+            echo "✅ No secrets found"
+          fi
+
