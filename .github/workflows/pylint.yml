@@ -50,18 +50,43 @@ jobs:
       continue-on-error: true  
 
 
-    - name: TruffleHog OSS (unverified secrets)
-      continue-on-error: true   # ensures the step doesn’t fail the job
+    # - name: TruffleHog OSS (unverified secrets)
+    #   continue-on-error: true   # ensures the step doesn’t fail the job
+    #   run: |
+    #     echo "🔎 Installing TruffleHog v3.90.6..."
+    #     curl -sSL https://github.com/trufflesecurity/trufflehog/releases/download/v3.90.6/trufflehog_3.90.6_linux_amd64.tar.gz -o trufflehog.tar.gz
+    #     tar -xzf trufflehog.tar.gz trufflehog
+    #     sudo mv trufflehog /usr/local/bin/trufflehog
+    #     trufflehog --version
+
+    #     echo "🔎 Scanning repository for unverified secrets..."
+    #     trufflehog filesystem ./ --json --no-verification \
+    #       | jq -r '
+    #           select(.Verified == false) |
+    #           "🔑 Unverified secret found!\nFile: \(.SourceMetadata.Data.path)\nLine: \(.SourceMetadata.Data.line)\nDetector: \(.DetectorName)\nRaw: \(.Raw)\n---"
+    #         '
+    - name: Show Unverified Secret (v3.90.6)
       run: |
-        echo "🔎 Installing TruffleHog v3.90.6..."
+        echo "🔎 Installing TruffleHog v3.90.6 for JSON output..."
         curl -sSL https://github.com/trufflesecurity/trufflehog/releases/download/v3.90.6/trufflehog_3.90.6_linux_amd64.tar.gz -o trufflehog.tar.gz
         tar -xzf trufflehog.tar.gz trufflehog
         sudo mv trufflehog /usr/local/bin/trufflehog
         trufflehog --version
 
-        echo "🔎 Scanning repository for unverified secrets..."
-        trufflehog filesystem ./ --json --no-verification \
-          | jq -r '
-              select(.Verified == false) |
-              "🔑 Unverified secret found!\nFile: \(.SourceMetadata.Data.path)\nLine: \(.SourceMetadata.Data.line)\nDetector: \(.DetectorName)\nRaw: \(.Raw)\n---"
-            '
+        echo "🔎 Extracting unverified secrets from repository..."
+        # Run filesystem scan and capture output
+        output=$(trufflehog filesystem ./ --json --no-verification)
+
+        # Count unverified secrets
+        unverified_count=$(echo "$output" | jq '[.[] | select(.VerificationResult=="UNVERIFIED" or .Verified==false)] | length')
+
+        if [ "$unverified_count" -gt 0 ]; then
+          echo "❌ $unverified_count unverified secret(s) found:"
+          echo "$output" | jq -r '
+            select(.VerificationResult=="UNVERIFIED" or .Verified==false) |
+            "🔑 Unverified secret found!\nFile: \(.SourceMetadata.Data.path // .SourceMetadata.Data.filename)\nLine: \(.SourceMetadata.Data.line)\nDetector: \(.DetectorName)\nRaw: \(.Raw)\n---"
+          '
+          exit 1  # fail job if any unverified secret exists
+        else
+          echo "✅ No unverified secrets found"
+        fi
