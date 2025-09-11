@@ -48,9 +48,12 @@ jobs:
         head: HEAD
         extra_args: --debug
     - name: Show detected secrets with file/line
-      if: failure() # only run if TruffleHog failed
+      if: failure() || success() # always run so you can see results
       run: |
-        cat trufflehog_results.json | jq -r '
-          select(.path != null) |
-          "SECRET in file: \(.path) at line: \(.lineNumber)\n  Detector: \(.detectorName)\n  Raw: \(.raw)\n"'
-        trufflehog git file://$(pwd)
+          if [ -s trufflehog_results.json ]; then
+            cat trufflehog_results.json | jq -r '
+              select(.path != null) |
+              "SECRET in file: \(.path) at line: \(.lineNumber)\n  Detector: \(.detectorName)\n  Raw: \(.raw)\n"'
+          else
+            echo "✅ No secrets found"
+          fi
