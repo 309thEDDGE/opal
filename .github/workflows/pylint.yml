@@ -47,3 +47,9 @@ jobs:
         base: ${{ github.event.repository.default_branch }}
         head: HEAD
         extra_args: --debug
+    - name: Show detected secrets with file/line
+      if: failure() # only run if TruffleHog failed
+      run: |
+        cat trufflehog_results.json | jq -r '
+          select(.path != null) |
+          "SECRET in file: \(.path) at line: \(.lineNumber)\n  Detector: \(.detectorName)\n  Raw: \(.raw)\n"'
