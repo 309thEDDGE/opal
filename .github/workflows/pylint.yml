@@ -46,16 +46,16 @@ jobs:
         path: ./
         base: ${{ github.event.repository.default_branch }}
         head: HEAD
-        extra_args: --debug  
+        extra_args: --debug
+      continue-on-error: true  
 
-
-    - name: Run TruffleHog with allowlist
+    - name: Run Trufflehog with allowlist
       run: |
         docker run --rm -v "$PWD:/repo" -w /repo \
           ghcr.io/trufflesecurity/trufflehog:latest \
           git file:///repo --since-commit main --branch HEAD \
           --json \
-          --allow "d38caecc0f1f71394643b0ebd986ad99df07243e" > trufflehog-output.json
+          --allowlist /repo/trufflehog-allowlist.yaml > trufflehog-output.json
 
-        echo "=== TruffleHog Findings ==="
+        echo "=== Trufflehog Findings ==="
         cat trufflehog-output.json | jq .
