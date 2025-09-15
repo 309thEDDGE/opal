@@ -46,4 +46,4 @@ jobs:
         path: ./
         base: ${{ github.event.repository.default_branch }}
         head: HEAD
-        extra_args: --debug
+        extra_args: --debug --allow-list ./trufflehog-allowlist.yaml
