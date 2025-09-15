@@ -40,20 +40,48 @@ jobs:
         pip install safety
         safety check
 
-    - name: TruffleHog OSS
-      uses: trufflesecurity/trufflehog@v3.22.0
-      with:
-        path: ./
-        base: ${{ github.event.repository.default_branch }}
-        head: HEAD
-        extra_args: --debug
+    - name: Run TruffleHog v3.22.0 (save results)
+      run: |
+        trufflehog git file://. \
+          --since-commit ${{ github.event.repository.default_branch }} \
+          --branch HEAD \
+          --json > trufflehog_results.json
       continue-on-error: true
 
-    - name: Filter results (simulate allowlist)
+    - name: Install yq and jq
       run: |
-        # Read results, drop any matches for your known secret
-        jq 'del(.[] | select(.Raw == "d38caecc0f1f71394643b0ebd986ad99df07243e"))' trufflehog_results.json > filtered_results.json
-        
-        echo "=== Filtered Trufflehog Results ==="
+        sudo apt-get update && sudo apt-get install -y jq
+        curl -sL https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -o yq
+        chmod +x yq
+        sudo mv yq /usr/local/bin/yq
+
+    - name: Apply allowlist filter
+      run: |
+        # Extract allowlist regexes and files from YAML
+        regexes=$(yq '.regexes[]' trufflehog-allowlist.yaml | tr '\n' '|' || true)
+        files=$(yq '.files[]' trufflehog-allowlist.yaml | tr '\n' '|' || true)
+
+        echo "=== Raw Results ==="
+        cat trufflehog_results.json | jq .
+
+        echo "=== Filtered Results ==="
+        cat trufflehog_results.json | jq \
+          --arg regexes "$regexes" \
+          --arg files "$files" \
+          'map(select(.Raw | test($regexes) | not) | select(.File | test($files) | not))' \
+          > filtered_results.json
+
         cat filtered_results.json
+
+    - name: Fail if real secrets remain
+      run: |
+        count=$(jq 'length' filtered_results.json)
+        if [ "$count" -gt 0 ]; then
+          echo "❌ Found $count real secrets after allowlist filtering!"
+          exit 1
+        else
+          echo "✅ No real secrets found after allowlist filtering."
+        fi
+
+
 
