@@ -40,10 +40,21 @@ jobs:
         pip install safety
         safety check
 
-    - name: TruffleHog OSS
-      uses: trufflesecurity/trufflehog@v3.90.6
-      with:
-        path: ./
-        base: ${{ github.event.repository.default_branch }}
-        head: HEAD
-        extra_args: --debug --allowlist-file ./trufflehog-allowlist.yaml
+    - name: Install TruffleHog v3.90.6
+      run: |
+        curl -sSL https://github.com/trufflesecurity/trufflehog/releases/download/v3.90.6/trufflehog_3.90.6_linux_amd64.tar.gz -o trufflehog.tar.gz
+        tar -xzf trufflehog.tar.gz trufflehog
+        chmod +x trufflehog
+        sudo mv trufflehog /usr/local/bin/trufflehog
+        trufflehog --version
+
+    - name: Run TruffleHog with allowlist
+      run: |
+        trufflehog git file://. \
+          --since-commit ${{ github.event.repository.default_branch }} \
+          --branch HEAD \
+          --json \
+          --allowlist-file ./trufflehog-allowlist.yaml > trufflehog_results.json
+
+        echo "=== TruffleHog Results ==="
+        cat trufflehog_results.json | jq .
