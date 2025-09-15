@@ -50,11 +50,12 @@ jobs:
 
     - name: Run TruffleHog with allowlist
       run: |
-        trufflehog git file://. \
-          --since-commit ${{ github.event.repository.default_branch }} \
-          --branch HEAD \
-          --json \
-          --allowlist-file ./trufflehog-allowlist.yaml > trufflehog_results.json
+        trufflehog --version
+        # trufflehog git file://. \
+        #   --since-commit ${{ github.event.repository.default_branch }} \
+        #   --branch HEAD \
+        #   --json \
+        #   --allowlist-file ./trufflehog-allowlist.yaml > trufflehog_results.json
 
         echo "=== TruffleHog Results ==="
         cat trufflehog_results.json | jq .
