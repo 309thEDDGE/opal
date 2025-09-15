@@ -51,7 +51,7 @@ jobs:
         path: ./
         base: ${{ github.event.repository.default_branch }}
         head: HEAD
-        extra_args: --exclude-paths ./trufflehog-allowlist.txt --debug
+        extra_args: --exclude-paths ./trufflehog-allowlist.txt --debug --json 
 
     # - name: Install TruffleHog v3.90.6
     #   run: |
