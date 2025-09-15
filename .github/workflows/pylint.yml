@@ -53,13 +53,13 @@ jobs:
         head: HEAD
         extra_args: --exclude-paths ./trufflehog-allowlist.txt --debug --json 
 
-    # - name: Install TruffleHog v3.90.6
-    #   run: |
-    #     curl -sSL https://github.com/trufflesecurity/trufflehog/releases/download/v3.90.6/trufflehog_3.90.6_linux_amd64.tar.gz -o trufflehog.tar.gz
-    #     tar -xzf trufflehog.tar.gz trufflehog
-    #     chmod +x trufflehog
-    #     sudo mv trufflehog /usr/local/bin/trufflehog
-    #     trufflehog --version
+    - name: Install TruffleHog v3.90.6
+      run: |
+        curl -sSL https://github.com/trufflesecurity/trufflehog/releases/download/v3.90.6/trufflehog_3.90.6_linux_amd64.tar.gz -o trufflehog.tar.gz
+        tar -xzf trufflehog.tar.gz trufflehog
+        chmod +x trufflehog
+        sudo mv trufflehog /usr/local/bin/trufflehog
+        trufflehog --version
 
     # - name: Run TruffleHog with allowlist
     #   run: |
