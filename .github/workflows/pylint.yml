@@ -49,25 +49,12 @@ jobs:
         extra_args: --debug
         continue-on-error: false  
 
-    - name: Install TruffleHog v3.90.6
+    - name: Run TruffleHog with allowlist
       run: |
-        sudo apt-get update && sudo apt-get install -y jq
-        curl -sSL https://github.com/trufflesecurity/trufflehog/releases/download/v3.90.6/trufflehog_3.90.6_linux_amd64.tar.gz -o trufflehog.tar.gz
-        tar -xzf trufflehog.tar.gz trufflehog
-        sudo mv trufflehog /usr/local/bin/trufflehog
-        trufflehog --version
-
-    - name: Extract unverified secrets (ignore known commit)
-      run: |
-        sudo apt-get update && sudo apt-get install -y jq
         curl -sSL https://github.com/trufflesecurity/trufflehog/releases/download/v3.90.6/trufflehog_3.90.6_linux_amd64.tar.gz -o trufflehog.tar.gz
         tar -xzf trufflehog.tar.gz trufflehog
         sudo mv trufflehog /usr/local/bin/trufflehog
 
-        echo "Scanning repository for unverified secrets..."
-        trufflehog filesystem ./ --json --no-verification \
-          | jq -r '
-              select((.VerificationResult=="UNVERIFIED" or .Verified==false)
-                    and .Commit != "d38caecc0f1f71394643b0ebd986ad99df07243e") |
-              "🔑 Unverified secret found!\nFile: \(.SourceMetadata.Data.path // .SourceMetadata.Data.filename)\nLine: \(.SourceMetadata.Data.line)\nDetector: \(.DetectorName)\nRaw: \(.Raw)\n---"
-          '
+        trufflehog git file:///repo --since-commit main --branch HEAD \
+          --json \
+          --allowlist-file ./trufflehog-allowlist.yaml
