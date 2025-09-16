@@ -40,39 +40,25 @@ jobs:
         pip install safety
         safety check
 
-    - name: Print working directory and files
-      run: |
-        pwd
-        ls -la
-
     - name: TruffleHog OSS
       uses: trufflesecurity/trufflehog@v3.90.6
       with:
         path: ./
         base: ${{ github.event.repository.default_branch }}
         head: HEAD
-        extra_args: --exclude-paths ./trufflehog-allowlist.txt --debug --json --results=verified,unknown
+        extra_args: --debug --json
+      continue-on-error: true
 
-
-    # - name: TruffleHog OSS
-    #   uses: trufflesecurity/trufflehog@v3.90.6
-    #   with:
-    #     path: ./
-    #     base: ${{ github.event.repository.default_branch }}
-    #     head: HEAD
-    #     extra_args: --exclude-paths ./trufflehog-allowlist.txt --debug --json
-    #   continue-on-error: true
-
-    # - name: Fail only if verified secrets are found
-    #   run: |
-    #     if [ -f trufflehog_results.json ]; then
-    #       VERIFIED=$(jq '[select(.Verified == true)] | length' trufflehog_results.json)
-    #       if [ "$VERIFIED" -gt 0 ]; then
-    #         echo "❌ Verified secrets found!"
-    #         exit 1
-    #       else
-    #         echo "✅ No verified secrets found (ignoring unverified)."
-    #       fi
-    #     else
-    #       echo "⚠️ No trufflehog_results.json found — did TruffleHog run with --json?"
-    #     fi
+    - name: Fail only if verified secrets are found
+      run: |
+        if [ -f trufflehog_results.json ]; then
+          VERIFIED=$(jq '[select(.Verified == true)] | length' trufflehog_results.json)
+          if [ "$VERIFIED" -gt 0 ]; then
+            echo "Verified secrets found!"
+            exit 1
+          else
+            echo "No verified secrets found (ignoring unverified)."
+          fi
+        else
+          echo "No trufflehog_results.json found."
+        fi
